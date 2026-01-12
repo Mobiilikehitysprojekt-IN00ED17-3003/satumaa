@@ -1,0 +1,21 @@
+# Android / Gradle
+.gradle/
+build/
+app/build/
+capture/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+
+# Firebase
+google-services.json
+app/google-services.json
+
+# Signing keys
+*.jks
+*.keystore
+
+# OS junk
+.DS_Store
