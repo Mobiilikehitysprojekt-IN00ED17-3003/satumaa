@@ -1,29 +1,23 @@
 // app/src/main/java/fi/antero/satumaa/ui/components/AppTopBar.kt
 package fi.antero.satumaa.ui.components
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
+import fi.antero.satumaa.ui.theme.StorybookPaper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTopBar(
-    title: String,
     modifier: Modifier = Modifier,
+    overrideTitle: String? = null, // Mahdollistaa nimen vaihtamisen (esim. "Profiili")
     showBack: Boolean = false,
     onBack: (() -> Unit)? = null,
     onOpenProfile: (() -> Unit)? = null
@@ -32,17 +26,31 @@ fun AppTopBar(
 
     CenterAlignedTopAppBar(
         modifier = modifier,
-        title = { Text(title) },
+        title = {
+            Text(
+                text = overrideTitle ?: "Satumaa",
+                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 24.sp),
+                color = StorybookPaper
+            )
+        },
         navigationIcon = {
             if (showBack && onBack != null) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Takaisin")
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Takaisin",
+                        tint = StorybookPaper
+                    )
                 }
             }
         },
         actions = {
             IconButton(onClick = { setExpanded(true) }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Valikko")
+                Icon(
+                    Icons.Default.MoreVert,
+                    contentDescription = "Valikko",
+                    tint = StorybookPaper
+                )
             }
 
             DropdownMenu(
@@ -66,10 +74,10 @@ fun AppTopBar(
             }
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = androidx.compose.ui.graphics.Color.Transparent,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-            actionIconContentColor = MaterialTheme.colorScheme.onSurface
+            containerColor = Color.Transparent,
+            titleContentColor = StorybookPaper,
+            navigationIconContentColor = StorybookPaper,
+            actionIconContentColor = StorybookPaper
         )
     )
 }

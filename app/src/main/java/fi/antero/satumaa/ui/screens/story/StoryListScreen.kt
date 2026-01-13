@@ -1,53 +1,45 @@
-// app/src/main/java/fi/antero/satumaa/ui/screens/story/StoryListScreen.kt
 package fi.antero.satumaa.ui.screens.story
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import fi.antero.satumaa.R
+import fi.antero.satumaa.ui.components.AppPageLayout
 import fi.antero.satumaa.ui.components.AppTopBar
 import fi.antero.satumaa.ui.navigation.RootRoute
+import fi.antero.satumaa.ui.theme.AppDimensions
+import fi.antero.satumaa.ui.theme.LocalAppImages
+import fi.antero.satumaa.ui.theme.StorybookPaper
 
 @Composable
 fun StoryListScreen(
     currentRoute: String?,
     onNavigate: (String) -> Unit
 ) {
-    Scaffold { padding ->
+    AppPageLayout(
+        backgroundImageRes = LocalAppImages.current.storyListBackground,
+        topBar = {
+            AppTopBar(
+                showBack = true,
+                onBack = { onNavigate(RootRoute.Menu.route) },
+                onOpenProfile = { onNavigate(RootRoute.Profile.route) }
+            )
+        }
+    ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .padding(horizontal = AppDimensions.ScreenPadding),
+            contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.lampi6),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+            Text(
+                "Täällä listataan sadut",
+                style = MaterialTheme.typography.bodyLarge,
+                color = StorybookPaper
             )
-
-            AppTopBar(
-                title = "Satumaa",
-                showBack = true,
-                onBack = { onNavigate(RootRoute.Menu.route) },
-                onOpenProfile = { onNavigate(RootRoute.Profile.route) },
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
-
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Täällä listataan sadut")
-            }
         }
     }
 }

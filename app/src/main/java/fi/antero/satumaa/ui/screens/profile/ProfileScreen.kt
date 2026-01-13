@@ -1,27 +1,17 @@
-// app/src/main/java/fi/antero/satumaa/ui/screens/profile/ProfileScreen.kt
 package fi.antero.satumaa.ui.screens.profile
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import fi.antero.satumaa.R
 import fi.antero.satumaa.ui.components.AppBottomBar
+import fi.antero.satumaa.ui.components.AppPageLayout
 import fi.antero.satumaa.ui.components.AppTopBar
 import fi.antero.satumaa.ui.navigation.RootRoute
+import fi.antero.satumaa.ui.theme.AppDimensions
+import fi.antero.satumaa.ui.theme.LocalAppImages
+import fi.antero.satumaa.ui.theme.StorybookPaper
 
 @Composable
 fun ProfileScreen(
@@ -29,39 +19,33 @@ fun ProfileScreen(
     onNavigate: (String) -> Unit,
     onLogout: () -> Unit
 ) {
-    Scaffold(
+    AppPageLayout(
+        backgroundImageRes = LocalAppImages.current.profileBackground,
         topBar = {
             AppTopBar(
-                title = "Profiili",
+                overrideTitle = "Profiili",
                 showBack = true,
-                onBack = { onNavigate(RootRoute.Menu.route) },
-                modifier = Modifier
+                onBack = { onNavigate(RootRoute.Menu.route) }
             )
         },
         bottomBar = { AppBottomBar(currentRoute, onNavigate) }
     ) { padding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .padding(horizontal = AppDimensions.ScreenPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.ratsu),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+            Text(
+                "Profiili",
+                style = MaterialTheme.typography.headlineLarge,
+                color = StorybookPaper
             )
-
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text("Profiili")
-                Spacer(Modifier.height(16.dp))
-                Button(onClick = onLogout) {
-                    Text("Kirjaudu ulos")
-                }
+            Spacer(Modifier.height(AppDimensions.CardSpacing))
+            Button(onClick = onLogout) {
+                Text("Kirjaudu ulos")
             }
         }
     }
