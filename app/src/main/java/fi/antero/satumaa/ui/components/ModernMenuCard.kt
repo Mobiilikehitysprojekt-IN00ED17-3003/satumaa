@@ -32,7 +32,6 @@ fun ModernMenuCard(
             .fillMaxWidth()
             .height(110.dp)
             .offset(y = offsetY.dp)
-            .shadow(15.dp, shape)
             .clip(shape)
             .clickable(onClick = onClick)
             .border(1.dp, Color.White.copy(alpha = 0.2f), shape),
