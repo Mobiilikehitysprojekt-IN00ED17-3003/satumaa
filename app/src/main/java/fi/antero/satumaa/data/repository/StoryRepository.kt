@@ -26,13 +26,12 @@ class StoryRepository @Inject constructor(
         style: String
     ): Result<String> {
 
-        // Huom: Vaikka backend päästää nyt läpi ilmankin,
-        // pidetään tämä tarkistus sovelluksessa hyvän tavan vuoksi.
-        if (auth.currentUser == null) {
-            return Result.failure(Exception("Et ole kirjautunut sisään. Kirjaudu ensin."))
-        }
+        val user = auth.currentUser
+            ?: return Result.failure(Exception("Et ole kirjautunut sisään. Kirjaudu ensin."))
 
         return try {
+            user.getIdToken(true).await()
+
             val data = hashMapOf(
                 "childName" to childName,
                 "keywords" to keywords,
@@ -40,30 +39,33 @@ class StoryRepository @Inject constructor(
                 "style" to style
             )
 
-            Log.d("StoryRepository", "Kutsutaan Cloud Functionia nimellä 'generateStory'...")
+            Log.d("StoryRepository", "Kutsutaan Cloud Functionia: generateStory, uid=${user.uid}")
 
-            // PALAUTETTU NIMEEN PERUSTUVA KUTSU
-            // Nyt kun index.ts export on varmasti 'generateStory' (Iso S), tämä löytää sen.
-            // Firebase Functions SDK osaa liittää auth-headerit paremmin näin kuin URL-kutsussa.
             val result = functions
                 .getHttpsCallable("generateStory")
                 .call(data)
                 .await()
 
-            val response = result.data as? Map<String, Any>
-            val storyId = response?.get("storyId") as? String
+            val response = result.data as? Map<*, *>
+                ?: throw Exception("Virheellinen vastaus pilvestä (ei Map)")
+
+            val storyId = response["storyId"] as? String
                 ?: throw Exception("Ei saatu storyId:tä pilvestä")
 
-            Log.d("StoryRepository", "Satu luotu, ID: $storyId. Haetaan sisältö...")
+            val uidUsed = (response["uidUsed"] as? String) ?: user.uid
 
-            // Jos backend käytti testi-käyttäjää (auth puuttui),
-            // tämä haku saattaa epäonnistua koska tallennus meni eri paikkaan.
-            // Mutta ainakin pääsemme tänne asti!
-            val uid = auth.currentUser?.uid ?: "TEST_USER_NO_AUTH"
+            Log.d("StoryRepository", "Satu luotu. storyId=$storyId uidUsed=$uidUsed. Haetaan sisältö Firestoresta...")
 
-            val snapshot = firestore.collection("users").document(uid)
-                .collection("stories").document(storyId)
-                .get().await()
+            val snapshot = firestore.collection("users")
+                .document(uidUsed)
+                .collection("stories")
+                .document(storyId)
+                .get()
+                .await()
+
+            if (!snapshot.exists()) {
+                throw Exception("Satu ei löytynyt Firestoresta (storyId=$storyId, uid=$uidUsed)")
+            }
 
             val title = snapshot.getString("title") ?: "Nimetön satu"
             val content = snapshot.getString("content") ?: "Ei sisältöä."
@@ -81,16 +83,20 @@ class StoryRepository @Inject constructor(
             )
 
             storyDao.insertStory(entity)
-            Log.d("StoryRepository", "Satu tallennettu paikallisesti!")
+
+            Log.d("StoryRepository", "Satu tallennettu paikallisesti: $storyId")
 
             Result.success(storyId)
         } catch (e: Exception) {
             Log.e("StoryRepository", "Virhe sadun luonnissa", e)
+
             val crashlytics = FirebaseCrashlytics.getInstance()
             crashlytics.setCustomKey("story_style", style)
             crashlytics.setCustomKey("story_length", length)
-            crashlytics.log("Epäonnistui sadun luonnissa")
+            crashlytics.setCustomKey("user_uid", auth.currentUser?.uid ?: "null")
+            crashlytics.log("Epäonnistui sadun luonnissa (generateStory)")
             crashlytics.recordException(e)
+
             Result.failure(e)
         }
     }

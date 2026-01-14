@@ -33,10 +33,12 @@ fun LoginScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
-    // HUOM: Pidetään tämä kovakoodattu ID, koska totesimme sen toimivan google-services.jsonin kanssa
+
+    val googleClientId = context.getString(R.string.default_web_client_id)
+
     val googleSignInClient = remember {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("803857639736-1hu6vfr5v3rp03p8l2impkm4bfn3glu9.apps.googleusercontent.com")
+            .requestIdToken(googleClientId)
             .requestEmail()
             .build()
         GoogleSignIn.getClient(context, gso)
@@ -49,18 +51,13 @@ fun LoginScreen(
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)
-                val idToken = account.idToken
-                if (idToken != null) {
-                    viewModel.signInWithGoogle(idToken)
-                }
+                account.idToken?.let { viewModel.signInWithGoogle(it) }
             } catch (e: ApiException) {
-                // Tähän voisi lisätä virheilmoituksen, jos Google-kirjautuminen peruutetaan
+                // Voitaisiin lähettää ViewModelille tieto peruutuksesta
             }
         }
     }
 
-    // Tämä seuraa tilaa: Kun kirjautuminen (Google tai Anonyymi) onnistuu,
-    // siirrytään eteenpäin.
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
             onLoginSuccess()
@@ -76,48 +73,73 @@ fun LoginScreen(
         )
 
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.weight(4f))
+            Spacer(modifier = Modifier.weight(3f))
+
+            // Logo tai Otsikko voisi olla tässä välissä
+            Text(
+                text = "Tervetuloa Satumaahan",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
 
             Box(
-                modifier = Modifier.weight(2f),
-                contentAlignment = Alignment.TopCenter
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
             ) {
                 when (uiState) {
-                    is AuthUiState.Loading -> {
-                        LoadingView()
-                    }
+                    is AuthUiState.Loading -> LoadingView()
                     is AuthUiState.Error -> {
                         ErrorView(
                             message = (uiState as AuthUiState.Error).message,
-                            // Retry yrittää Google-kirjautumista oletuksena
-                            onRetry = { launcher.launch(googleSignInClient.signInIntent) }
+                            onRetry = { viewModel.signInAnonymously() } // Tai Google-vaihtoehto
                         )
                     }
                     else -> {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Button(
-                                onClick = { launcher.launch(googleSignInClient.signInIntent) },
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            ) {
-                                Text("Kirjaudu Google-tilillä")
-                            }
-
-                            // --- TÄMÄ ON MUUTETTU KOHTA ---
-                            // Nyt tämä kutsuu ViewModelin anonyymiä kirjautumista.
-                            // Kun se onnistuu, LaunchedEffect yllä hoitaa siirtymisen.
-                            TextButton(onClick = { viewModel.signInAnonymously() }) {
-                                Text(
-                                    "Ohita Google (Anonyymi kirjautuminen)",
-                                    color = Color.White
-                                )
-                            }
-                        }
+                        LoginButtons(
+                            onGoogleClick = { launcher.launch(googleSignInClient.signInIntent) },
+                            onAnonymousClick = { viewModel.signInAnonymously() }
+                        )
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(48.dp))
+        }
+    }
+}
+
+@Composable
+private fun LoginButtons(
+    onGoogleClick: () -> Unit,
+    onAnonymousClick: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Button(
+            onClick = onGoogleClick,
+            modifier = Modifier.fillMaxWidth(0.8f).padding(bottom = 12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_google),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text("Jatka Google-tilillä")
+        }
+
+        TextButton(onClick = onAnonymousClick) {
+            Text(
+                "Kokeile ilman tiliä",
+                color = Color.White.copy(alpha = 0.8f),
+                style = MaterialTheme.typography.labelLarge
+            )
         }
     }
 }

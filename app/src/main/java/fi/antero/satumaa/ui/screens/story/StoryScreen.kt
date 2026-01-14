@@ -34,7 +34,7 @@ import fi.antero.satumaa.ui.viewmodel.story.StoryViewModel
 
 @Composable
 fun StoryScreen(
-    userName: String, // Nimi tulee suoraan Onboardingista/Appista
+    userName: String,
     onNavigate: (String) -> Unit,
     viewModel: StoryViewModel = hiltViewModel()
 ) {
@@ -226,13 +226,13 @@ fun StoryScreen(
                 }
             }
 
-            // Tyhjää tilaa alhaalle scrollausta varten
+
             Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
-// Apukomponentti tyylikkäille tekstikentille
+
 @Composable
 fun MagicWordInput(
     value: String,
