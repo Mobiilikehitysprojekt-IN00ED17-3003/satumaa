@@ -5,6 +5,8 @@ plugins {
     id("kotlin-kapt")
     alias(libs.plugins.hilt)
     alias(libs.plugins.google.services)
+
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -39,12 +41,11 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     kapt {
         correctErrorTypes = true
     }
-
-
 }
 
 dependencies {
@@ -70,6 +71,8 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+
+    implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.functions)
@@ -85,6 +88,13 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
 
     implementation(libs.play.services.auth)
+
+    implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
+    implementation("com.squareup.okhttp3:okhttp")
+    implementation("com.squareup.okhttp3:logging-interceptor")
+
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    debugImplementation("com.google.firebase:firebase-appcheck-debug")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

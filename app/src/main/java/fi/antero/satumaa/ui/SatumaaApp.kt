@@ -5,7 +5,7 @@ import androidx.navigation.compose.*
 import fi.antero.satumaa.ui.navigation.RootRoute
 import fi.antero.satumaa.ui.screens.auth.LoginScreen
 import fi.antero.satumaa.ui.screens.menu.MenuScreen
-import fi.antero.satumaa.ui.screens.story.StoryListScreen
+import fi.antero.satumaa.ui.screens.story.StoryScreen // UUSI IMPORT
 import fi.antero.satumaa.ui.screens.letter.LetterFlowScreen
 import fi.antero.satumaa.ui.screens.profile.ProfileScreen
 import fi.antero.satumaa.ui.screens.onboarding.OnboardingScreen
@@ -16,7 +16,7 @@ fun SatumaaApp() {
     val backStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry.value?.destination?.route
 
-    // Tallennetaan nimi tähän, jotta se säilyy istunnon ajan
+    // Tässä säilytetään nimi, jonka saimme Onboardingissa!
     var adventurerName by remember { mutableStateOf("Seikkailija") }
 
     val navigate: (String) -> Unit = { route ->
@@ -43,7 +43,7 @@ fun SatumaaApp() {
         composable(RootRoute.Onboarding.route) {
             OnboardingScreen(
                 onNameSubmitted = { name ->
-                    adventurerName = name
+                    adventurerName = name // Tallennetaan nimi muistiin
                     navController.navigate(RootRoute.Menu.route) {
                         popUpTo(RootRoute.Onboarding.route) { inclusive = true }
                     }
@@ -52,7 +52,6 @@ fun SatumaaApp() {
         }
 
         composable(RootRoute.Menu.route) {
-
             MenuScreen(
                 currentRoute = currentRoute,
                 userName = adventurerName,
@@ -60,9 +59,14 @@ fun SatumaaApp() {
             )
         }
 
+        // --- UUSI YKSINKERTAINEN SATU-REITTI ---
         composable(RootRoute.Story.route) {
-            StoryListScreen(currentRoute, navigate)
+            StoryScreen(
+                userName = adventurerName, // Välitetään nimi sadulle
+                onNavigate = navigate
+            )
         }
+        // ---------------------------------------
 
         composable(RootRoute.Letter.route) {
             LetterFlowScreen(currentRoute, navigate)

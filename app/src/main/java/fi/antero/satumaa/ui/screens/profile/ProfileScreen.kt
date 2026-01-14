@@ -5,11 +5,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import fi.antero.satumaa.ui.components.AppBottomBar
 import fi.antero.satumaa.ui.components.AppPageLayout
 import fi.antero.satumaa.ui.components.AppTopBar
 import fi.antero.satumaa.ui.navigation.RootRoute
-import fi.antero.satumaa.ui.theme.AppDimensions
 import fi.antero.satumaa.ui.theme.LocalAppImages
 import fi.antero.satumaa.ui.theme.StorybookPaper
 
@@ -19,8 +21,12 @@ fun ProfileScreen(
     onNavigate: (String) -> Unit,
     onLogout: () -> Unit
 ) {
+
+    val user = Firebase.auth.currentUser
+    val email = user?.email ?: "Ei sähköpostia"
+
     AppPageLayout(
-        backgroundImageRes = LocalAppImages.current.profileBackground,
+        backgroundImageRes = LocalAppImages.current.menuBackground,
         topBar = {
             AppTopBar(
                 overrideTitle = "Profiili",
@@ -28,24 +34,59 @@ fun ProfileScreen(
                 onBack = { onNavigate(RootRoute.Menu.route) }
             )
         },
-        bottomBar = { AppBottomBar(currentRoute, onNavigate) }
+        bottomBar = {
+            AppBottomBar(currentRoute, onNavigate)
+        }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = AppDimensions.ScreenPadding),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                "Profiili",
-                style = MaterialTheme.typography.headlineLarge,
-                color = StorybookPaper
-            )
-            Spacer(Modifier.height(AppDimensions.CardSpacing))
-            Button(onClick = onLogout) {
-                Text("Kirjaudu ulos")
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Kirjautunut käyttäjä:",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = StorybookPaper
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = email,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+
+                    Button(
+                        onClick = {
+
+                            Firebase.auth.signOut()
+
+
+                            onLogout()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Kirjaudu ulos")
+                    }
+                }
             }
         }
     }
