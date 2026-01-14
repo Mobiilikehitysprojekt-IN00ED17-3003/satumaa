@@ -5,6 +5,8 @@ plugins {
     id("kotlin-kapt")
     alias(libs.plugins.hilt)
     alias(libs.plugins.google.services)
+
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -43,8 +45,6 @@ android {
     kapt {
         correctErrorTypes = true
     }
-
-
 }
 
 dependencies {
@@ -70,6 +70,8 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    // UUSI: Crashlytics kirjasto
+    implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.functions)

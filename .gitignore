@@ -1,15 +1,33 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Gradle-tiedostot [cite: 91]
+.gradle/
+build/
+app/build/
+
+# Paikalliset asetukset (sisältää SDK-polut) [cite: 91]
 local.properties
+
+# Android Studio / IntelliJ [cite: 91]
+.idea/
+*.iml
+.idea/caches/
+.idea/libraries/
+.idea/workspace.xml
+
+# Firebase-konfiguraatio (Android-puoli) [cite: 112]
+app/google-services.json
+
+# Allekirjoitusavaimet
+*.jks
+*.keystore
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# --- BACKEND (Firebase Functions) --- [cite: 100]
+functions/node_modules/
+functions/lib/
+functions/.env
+functions/.env.*
+functions/firebase-debug.log
+functions/ui-debug.log

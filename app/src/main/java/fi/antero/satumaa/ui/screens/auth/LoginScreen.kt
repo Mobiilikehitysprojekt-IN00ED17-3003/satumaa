@@ -33,9 +33,10 @@ fun LoginScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
+    // HUOM: Pidetään tämä kovakoodattu ID, koska totesimme sen toimivan google-services.jsonin kanssa
     val googleSignInClient = remember {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestIdToken("803857639736-1hu6vfr5v3rp03p8l2impkm4bfn3glu9.apps.googleusercontent.com")
             .requestEmail()
             .build()
         GoogleSignIn.getClient(context, gso)
@@ -53,10 +54,13 @@ fun LoginScreen(
                     viewModel.signInWithGoogle(idToken)
                 }
             } catch (e: ApiException) {
+                // Tähän voisi lisätä virheilmoituksen, jos Google-kirjautuminen peruutetaan
             }
         }
     }
 
+    // Tämä seuraa tilaa: Kun kirjautuminen (Google tai Anonyymi) onnistuu,
+    // siirrytään eteenpäin.
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
             onLoginSuccess()
@@ -88,6 +92,7 @@ fun LoginScreen(
                     is AuthUiState.Error -> {
                         ErrorView(
                             message = (uiState as AuthUiState.Error).message,
+                            // Retry yrittää Google-kirjautumista oletuksena
                             onRetry = { launcher.launch(googleSignInClient.signInIntent) }
                         )
                     }
@@ -100,9 +105,12 @@ fun LoginScreen(
                                 Text("Kirjaudu Google-tilillä")
                             }
 
-                            TextButton(onClick = onLoginSuccess) {
+                            // --- TÄMÄ ON MUUTETTU KOHTA ---
+                            // Nyt tämä kutsuu ViewModelin anonyymiä kirjautumista.
+                            // Kun se onnistuu, LaunchedEffect yllä hoitaa siirtymisen.
+                            TextButton(onClick = { viewModel.signInAnonymously() }) {
                                 Text(
-                                    "Jatka kirjautumatta (Kehitys)",
+                                    "Ohita Google (Anonyymi kirjautuminen)",
                                     color = Color.White
                                 )
                             }
