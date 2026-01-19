@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.antero.satumaa.ui.components.AppPageLayout
 import fi.antero.satumaa.ui.components.AppTopBar
+import fi.antero.satumaa.ui.components.ErrorView // UUSI IMPORT
 import fi.antero.satumaa.ui.navigation.RootRoute
 import fi.antero.satumaa.ui.theme.AppDimensions
 import fi.antero.satumaa.ui.theme.LocalAppImages
@@ -88,10 +89,15 @@ fun LetterFlowScreen(
                 Text(if (state.isSending) "Lähetetään..." else "Lähetä")
             }
 
-            state.error?.let {
+            // --- PÄIVITETTY VIRHEENKÄSITTELY ---
+            state.error?.let { msg ->
                 Spacer(Modifier.height(10.dp))
-                Text(it, color = MaterialTheme.colorScheme.error)
+                ErrorView(
+                    message = msg,
+                    onRetry = { vm.sendLetter() }
+                )
             }
+            // -----------------------------------
 
             Spacer(Modifier.height(16.dp))
 
@@ -115,13 +121,7 @@ fun LetterFlowScreen(
                         color = StorybookPaper
                     )
                 }
-
-                "error" -> Text(
-                    text = "Tapahtui virhe. Yritä uudelleen.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error
-                )
-
+                // Poistettu "error" haara täältä, koska ylempi ErrorView hoitaa sen
                 null -> Unit
             }
         }

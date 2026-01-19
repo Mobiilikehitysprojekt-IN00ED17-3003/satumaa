@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import fi.antero.satumaa.ui.components.AppPageLayout
 import fi.antero.satumaa.ui.components.AppTopBar
+import fi.antero.satumaa.ui.components.ErrorView
 import fi.antero.satumaa.ui.components.story.StoryLength
 import fi.antero.satumaa.ui.components.story.StoryLengthSelector
 import fi.antero.satumaa.ui.components.story.StoryStyle
@@ -85,7 +86,17 @@ fun StoryScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+
             if (uiState !is StoryUiState.Success && uiState !is StoryUiState.Loading) {
+
+                if (uiState is StoryUiState.Error) {
+                    ErrorView(
+                        message = (uiState as StoryUiState.Error).message,
+                        onRetry = { viewModel.resetState() }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
                 Text(
                     text = "Kirjoita kolme taikasanaa,\nniin $userName saa sadun!",
                     style = MaterialTheme.typography.titleMedium,
@@ -136,11 +147,6 @@ fun StoryScreen(
             if (uiState is StoryUiState.Loading) {
                 CircularProgressIndicator(color = StorybookPaper)
                 Text("Taikuutta ilmassa...", color = StorybookPaper)
-            }
-
-            if (uiState is StoryUiState.Error) {
-                Text((uiState as StoryUiState.Error).message, color = Color.Red)
-                Button(onClick = { viewModel.resetState() }) { Text("Yritä uudelleen") }
             }
 
             AnimatedVisibility(uiState is StoryUiState.Success, enter = fadeIn()) {

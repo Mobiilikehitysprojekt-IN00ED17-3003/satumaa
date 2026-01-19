@@ -34,10 +34,9 @@ fun LoginScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
-    // Paikallinen tila Google-kirjautumisen Intent-virheille (ennen kuin päästään ViewModeliin)
+    // Paikallinen tila Google-kirjautumisen Intent-virheille
     var googleError by remember { mutableStateOf<String?>(null) }
 
-    // TÄRKEÄ: Tämä id haetaan resursseista (Main branchin korjaus)
     val googleClientId = context.getString(R.string.default_web_client_id)
 
     val googleSignInClient = remember {
@@ -52,13 +51,11 @@ fun LoginScreen(
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        // Tyhjennetään vanhat virheet
         googleError = null
 
         if (result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
-                // Yritetään kaivaa tili vastauksesta (Miron lisäys: tarkempi logitus)
                 val account = task.getResult(ApiException::class.java)
                 val idToken = account.idToken
 
@@ -71,7 +68,6 @@ fun LoginScreen(
                 }
 
             } catch (e: ApiException) {
-                // TÄRKEÄ: Näytetään virhe (Miron lisäys)
                 val msg = "Google Sign-In epäonnistui (koodi ${e.statusCode})."
                 Log.e("AUTH", msg, e)
                 googleError = "Google-kirjautuminen epäonnistui. Yritä uudelleen."
@@ -81,7 +77,6 @@ fun LoginScreen(
         }
     }
 
-    // Kuunnellaan ViewModelin tilaa navigointia varten
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
             Log.d("AUTH", "AuthUiState.Success -> navigate")
@@ -116,14 +111,17 @@ fun LoginScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(2f), // Varmistetaan tila sisällölle
+                    .weight(2f),
                 contentAlignment = Alignment.Center
             ) {
-                when (uiState) {
+                // KORJAUS: Otetaan tila lokaaliin muuttujaan, jotta Smart Cast toimii
+                val state = uiState
+
+                when (state) {
                     is AuthUiState.Loading -> LoadingView()
                     is AuthUiState.Error -> {
                         ErrorView(
-                            message = (uiState as AuthUiState.Error).message,
+                            message = state.message, // Nyt toimii ilman (uiState as ...) pakotusta
                             onRetry = {
                                 googleError = null
                                 viewModel.resetState()
@@ -132,12 +130,11 @@ fun LoginScreen(
                     }
                     else -> {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            // Näytetään mahdolliset launcher-virheet tässä
-                            googleError?.let {
-                                Text(
-                                    text = it,
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodyMedium,
+
+                            googleError?.let { msg ->
+                                ErrorView(
+                                    message = msg,
+                                    onRetry = { googleError = null },
                                     modifier = Modifier.padding(bottom = 16.dp)
                                 )
                             }
@@ -174,7 +171,6 @@ private fun LoginButtons(
                 .padding(bottom = 12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
-            // Huom: Varmista että R.drawable.ic_google löytyy, tai korvaa Icons.Defaultilla
             Icon(
                 painter = painterResource(id = R.drawable.ic_google),
                 contentDescription = null,

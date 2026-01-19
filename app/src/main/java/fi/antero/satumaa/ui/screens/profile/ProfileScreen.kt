@@ -70,13 +70,9 @@ fun ProfileScreen(
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-
                     Button(
                         onClick = {
-
                             Firebase.auth.signOut()
-
-
                             onLogout()
                         },
                         colors = ButtonDefaults.buttonColors(
