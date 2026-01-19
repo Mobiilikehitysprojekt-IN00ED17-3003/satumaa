@@ -2,9 +2,11 @@ package fi.antero.satumaa.ui
 
 import androidx.compose.runtime.*
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import fi.antero.satumaa.ui.navigation.RootRoute
 import fi.antero.satumaa.ui.screens.auth.LoginScreen
 import fi.antero.satumaa.ui.screens.menu.MenuScreen
+import fi.antero.satumaa.ui.screens.story.StoryScreen
 import fi.antero.satumaa.ui.screens.story.StoryListScreen
 import fi.antero.satumaa.ui.screens.letter.LetterFlowScreen
 import fi.antero.satumaa.ui.screens.profile.ProfileScreen
@@ -16,7 +18,6 @@ fun SatumaaApp() {
     val backStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry.value?.destination?.route
 
-    // Tallennetaan nimi tähän, jotta se säilyy istunnon ajan
     var adventurerName by remember { mutableStateOf("Seikkailija") }
 
     val navigate: (String) -> Unit = { route ->
@@ -30,6 +31,7 @@ fun SatumaaApp() {
         navController = navController,
         startDestination = RootRoute.Login.route
     ) {
+        // --- KIRJAUTUMINEN ---
         composable(RootRoute.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
@@ -40,6 +42,7 @@ fun SatumaaApp() {
             )
         }
 
+        // --- ONBOARDING (Nimen kysyminen) ---
         composable(RootRoute.Onboarding.route) {
             OnboardingScreen(
                 onNameSubmitted = { name ->
@@ -51,8 +54,8 @@ fun SatumaaApp() {
             )
         }
 
+        // --- PÄÄVALIKKO ---
         composable(RootRoute.Menu.route) {
-
             MenuScreen(
                 currentRoute = currentRoute,
                 userName = adventurerName,
@@ -60,14 +63,36 @@ fun SatumaaApp() {
             )
         }
 
-        composable(RootRoute.Story.route) {
-            StoryListScreen(currentRoute, navigate)
+        // --- YKSITTÄINEN SATU (ID:llä) ---
+        composable(
+            route = "story?storyId={storyId}",
+            arguments = listOf(navArgument("storyId") { nullable = true })
+        ) { entry ->
+            val storyId = entry.arguments?.getString("storyId")
+            StoryScreen(
+                userName = adventurerName,
+                storyId = storyId,
+                onNavigate = navigate
+            )
         }
 
+        // --- SATULISTA ---
+        composable(RootRoute.StoryList.route) {
+            StoryListScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onStoryClick = { id ->
+                    // Navigoidaan story-ruutuun ID:n kanssa
+                    navController.navigate("story?storyId=$id")
+                }
+            )
+        }
+
+        // --- KIRJEIDEN LUONTI ---
         composable(RootRoute.Letter.route) {
             LetterFlowScreen(currentRoute, navigate)
         }
 
+        // --- PROFIILI ---
         composable(RootRoute.Profile.route) {
             ProfileScreen(
                 currentRoute = currentRoute,

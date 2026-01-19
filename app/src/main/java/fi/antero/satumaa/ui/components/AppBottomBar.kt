@@ -18,12 +18,14 @@ fun AppBottomBar(
             icon = { Icon(Icons.Default.Home, null) },
             label = { Text("Koti") }
         )
+
         NavigationBarItem(
             selected = currentRoute == RootRoute.Story.route,
             onClick = { onNavigate(RootRoute.Story.route) },
             icon = { Icon(Icons.Default.AutoStories, null) },
             label = { Text("Satu") }
         )
+        // -------------------------------------------------------
         NavigationBarItem(
             selected = currentRoute == RootRoute.Letter.route,
             onClick = { onNavigate(RootRoute.Letter.route) },

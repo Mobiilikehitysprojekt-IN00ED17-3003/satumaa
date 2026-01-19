@@ -1,12 +1,11 @@
-// app/src/main/java/fi/antero/satumaa/ui/navigation/Routes.kt
 package fi.antero.satumaa.ui.navigation
 
 sealed class RootRoute(val route: String) {
-    object Login : RootRoute("login")
-
-    object Onboarding : RootRoute("onboarding")
-    object Menu : RootRoute("menu")
-    object Story : RootRoute("story")
-    object Letter : RootRoute("letter")
-    object Profile : RootRoute("profile")
+    data object Login : RootRoute("login")
+    data object Onboarding : RootRoute("onboarding")
+    data object Menu : RootRoute("menu")
+    data object Story : RootRoute("story")
+    data object StoryList : RootRoute("story_list")
+    data object Letter : RootRoute("letter")
+    data object Profile : RootRoute("profile")
 }
