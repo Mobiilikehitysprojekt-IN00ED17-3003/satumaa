@@ -1,7 +1,7 @@
-// app/src/main/java/fi/antero/satumaa/ui/components/AppTopBar.kt
 package fi.antero.satumaa.ui.components
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
@@ -17,10 +17,11 @@ import fi.antero.satumaa.ui.theme.StorybookPaper
 @Composable
 fun AppTopBar(
     modifier: Modifier = Modifier,
-    overrideTitle: String? = null, // Mahdollistaa nimen vaihtamisen (esim. "Profiili")
+    overrideTitle: String? = null,
     showBack: Boolean = false,
     onBack: (() -> Unit)? = null,
-    onOpenProfile: (() -> Unit)? = null
+    onOpenProfile: (() -> Unit)? = null,
+    onOpenLibrary: (() -> Unit)? = null
 ) {
     val (expanded, setExpanded) = remember { mutableStateOf(false) }
 
@@ -45,6 +46,8 @@ fun AppTopBar(
             }
         },
         actions = {
+
+
             IconButton(onClick = { setExpanded(true) }) {
                 Icon(
                     Icons.Default.MoreVert,
@@ -55,8 +58,23 @@ fun AppTopBar(
 
             DropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { setExpanded(false) }
+                onDismissRequest = { setExpanded(false) },
+                containerColor = MaterialTheme.colorScheme.surfaceVariant // Hieman erottuva tausta valikolle
             ) {
+
+                if (onOpenLibrary != null) {
+                    DropdownMenuItem(
+                        text = { Text("Omat sadut") },
+                        leadingIcon = {
+                            Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
+                        },
+                        onClick = {
+                            setExpanded(false)
+                            onOpenLibrary()
+                        }
+                    )
+                }
+
                 if (onOpenProfile != null) {
                     DropdownMenuItem(
                         text = { Text("Profiili") },
@@ -64,11 +82,6 @@ fun AppTopBar(
                             setExpanded(false)
                             onOpenProfile()
                         }
-                    )
-                } else {
-                    DropdownMenuItem(
-                        text = { Text("Ei toimintoja vielä") },
-                        onClick = { setExpanded(false) }
                     )
                 }
             }

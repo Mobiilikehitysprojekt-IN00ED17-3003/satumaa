@@ -2,10 +2,12 @@ package fi.antero.satumaa.ui
 
 import androidx.compose.runtime.*
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import fi.antero.satumaa.ui.navigation.RootRoute
 import fi.antero.satumaa.ui.screens.auth.LoginScreen
 import fi.antero.satumaa.ui.screens.menu.MenuScreen
-import fi.antero.satumaa.ui.screens.story.StoryScreen // UUSI IMPORT
+import fi.antero.satumaa.ui.screens.story.StoryScreen
+import fi.antero.satumaa.ui.screens.story.StoryListScreen
 import fi.antero.satumaa.ui.screens.letter.LetterFlowScreen
 import fi.antero.satumaa.ui.screens.profile.ProfileScreen
 import fi.antero.satumaa.ui.screens.onboarding.OnboardingScreen
@@ -16,7 +18,6 @@ fun SatumaaApp() {
     val backStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry.value?.destination?.route
 
-    // Tässä säilytetään nimi, jonka saimme Onboardingissa!
     var adventurerName by remember { mutableStateOf("Seikkailija") }
 
     val navigate: (String) -> Unit = { route ->
@@ -30,6 +31,7 @@ fun SatumaaApp() {
         navController = navController,
         startDestination = RootRoute.Login.route
     ) {
+        // --- KIRJAUTUMINEN ---
         composable(RootRoute.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
@@ -40,10 +42,11 @@ fun SatumaaApp() {
             )
         }
 
+        // --- ONBOARDING (Nimen kysyminen) ---
         composable(RootRoute.Onboarding.route) {
             OnboardingScreen(
                 onNameSubmitted = { name ->
-                    adventurerName = name // Tallennetaan nimi muistiin
+                    adventurerName = name
                     navController.navigate(RootRoute.Menu.route) {
                         popUpTo(RootRoute.Onboarding.route) { inclusive = true }
                     }
@@ -51,6 +54,7 @@ fun SatumaaApp() {
             )
         }
 
+        // --- PÄÄVALIKKO ---
         composable(RootRoute.Menu.route) {
             MenuScreen(
                 currentRoute = currentRoute,
@@ -59,19 +63,36 @@ fun SatumaaApp() {
             )
         }
 
-        // --- UUSI YKSINKERTAINEN SATU-REITTI ---
-        composable(RootRoute.Story.route) {
+        // --- YKSITTÄINEN SATU (ID:llä) ---
+        composable(
+            route = "story?storyId={storyId}",
+            arguments = listOf(navArgument("storyId") { nullable = true })
+        ) { entry ->
+            val storyId = entry.arguments?.getString("storyId")
             StoryScreen(
-                userName = adventurerName, // Välitetään nimi sadulle
+                userName = adventurerName,
+                storyId = storyId,
                 onNavigate = navigate
             )
         }
-        // ---------------------------------------
 
+        // --- SATULISTA ---
+        composable(RootRoute.StoryList.route) {
+            StoryListScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onStoryClick = { id ->
+                    // Navigoidaan story-ruutuun ID:n kanssa
+                    navController.navigate("story?storyId=$id")
+                }
+            )
+        }
+
+        // --- KIRJEIDEN LUONTI ---
         composable(RootRoute.Letter.route) {
             LetterFlowScreen(currentRoute, navigate)
         }
 
+        // --- PROFIILI ---
         composable(RootRoute.Profile.route) {
             ProfileScreen(
                 currentRoute = currentRoute,

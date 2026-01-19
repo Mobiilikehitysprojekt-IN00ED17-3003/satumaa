@@ -1,24 +1,59 @@
-package fi.antero.satumaa.repository
+package fi.antero.satumaa.data.repository
 
+import android.content.Context
 import android.util.Log
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.crashlytics.FirebaseCrashlytics
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.functions.FirebaseFunctions
+import androidx.work.*
+import dagger.hilt.android.qualifiers.ApplicationContext
 import fi.antero.satumaa.data.local.dao.StoryDao
-import fi.antero.satumaa.data.local.entity.StoryEntity
-import kotlinx.coroutines.tasks.await
+import fi.antero.satumaa.data.mapper.toDomainModel
+import fi.antero.satumaa.data.mapper.toEntity
+import fi.antero.satumaa.data.model.Story
+import fi.antero.satumaa.data.remote.firestore.StoryFirestoreSource
+import fi.antero.satumaa.data.remote.functions.StoryFunctionsSource
+import fi.antero.satumaa.workers.DeleteStoryWorker
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class StoryRepository @Inject constructor(
-    private val functions: FirebaseFunctions,
-    private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth,
-    private val storyDao: StoryDao
+    private val firestoreSource: StoryFirestoreSource, // UUSI
+    private val functionsSource: StoryFunctionsSource, // UUSI
+    private val storyDao: StoryDao,
+    @ApplicationContext private val context: Context
 ) {
 
+    // 1. Datan haku (UI kuuntelee tätä)
+    fun getStories(): Flow<List<Story>> {
+        return storyDao.getAllStories().map { entities ->
+            entities.map { it.toDomainModel() }
+        }
+    }
+
+    suspend fun getStory(id: String): Story? {
+        return storyDao.getStoryById(id)?.toDomainModel()
+    }
+
+    // 2. Synkronointi (Remote -> Mapper -> Local)
+    suspend fun refreshStories() {
+        Log.d("StoryRepository", "Synkronoidaan sadut...")
+
+        // Hae DTO:t
+        val dtos = firestoreSource.getUserStories()
+
+        if (dtos.isNotEmpty()) {
+            // Muunna Entityiksi ja tallenna kantaan
+            val entities = dtos.map { it.toEntity() }
+            storyDao.insertStories(entities)
+            Log.d("StoryRepository", "Tallennettu ${entities.size} satua tietokantaan.")
+        } else {
+            Log.d("StoryRepository", "Ei satuja pilvessä tai virhe haussa.")
+        }
+    }
+
+    // 3. Generointi (Functions -> Remote -> Mapper -> Local)
     suspend fun generateAndSaveStory(
         childName: String,
         keywords: List<String>,
@@ -26,81 +61,39 @@ class StoryRepository @Inject constructor(
         style: String
     ): Result<String> {
 
-        val user = auth.currentUser
-            ?: return Result.failure(Exception("Et ole kirjautunut sisään. Kirjaudu ensin."))
+        // A) Kutsu Cloud Functionia
+        val generateResult = functionsSource.generateStory(childName, keywords, length, style)
 
-        return try {
-            user.getIdToken(true).await()
+        return generateResult.mapCatching { storyId ->
+            // B) Jos onnistui, hae valmis satu Firestoresta
+            val storyDto = firestoreSource.getStoryById(storyId)
+                ?: throw Exception("Satu luotiin, mutta sitä ei löytynyt haettaessa.")
 
-            val data = hashMapOf(
-                "childName" to childName,
-                "keywords" to keywords,
-                "length" to length,
-                "style" to style
-            )
+            // C) Tallenna paikalliseen kantaan
+            storyDao.insertStory(storyDto.toEntity())
 
-            Log.d("StoryRepository", "Kutsutaan Cloud Functionia: generateStory, uid=${user.uid}")
-
-            val result = functions
-                .getHttpsCallable("generateStory")
-                .call(data)
-                .await()
-
-            val response = result.data as? Map<*, *>
-                ?: throw Exception("Virheellinen vastaus pilvestä (ei Map)")
-
-            val storyId = response["storyId"] as? String
-                ?: throw Exception("Ei saatu storyId:tä pilvestä")
-
-            val uidUsed = (response["uidUsed"] as? String) ?: user.uid
-
-            Log.d("StoryRepository", "Satu luotu. storyId=$storyId uidUsed=$uidUsed. Haetaan sisältö Firestoresta...")
-
-            val snapshot = firestore.collection("users")
-                .document(uidUsed)
-                .collection("stories")
-                .document(storyId)
-                .get()
-                .await()
-
-            if (!snapshot.exists()) {
-                throw Exception("Satu ei löytynyt Firestoresta (storyId=$storyId, uid=$uidUsed)")
-            }
-
-            val title = snapshot.getString("title") ?: "Nimetön satu"
-            val content = snapshot.getString("content") ?: "Ei sisältöä."
-            val keywordsString = keywords.joinToString(", ")
-
-            val entity = StoryEntity(
-                id = storyId,
-                title = title,
-                content = content,
-                childName = childName,
-                style = style,
-                keywords = keywordsString,
-                createdAt = System.currentTimeMillis(),
-                isFavorite = false
-            )
-
-            storyDao.insertStory(entity)
-
-            Log.d("StoryRepository", "Satu tallennettu paikallisesti: $storyId")
-
-            Result.success(storyId)
-        } catch (e: Exception) {
-            Log.e("StoryRepository", "Virhe sadun luonnissa", e)
-
-            val crashlytics = FirebaseCrashlytics.getInstance()
-            crashlytics.setCustomKey("story_style", style)
-            crashlytics.setCustomKey("story_length", length)
-            crashlytics.setCustomKey("user_uid", auth.currentUser?.uid ?: "null")
-            crashlytics.log("Epäonnistui sadun luonnissa (generateStory)")
-            crashlytics.recordException(e)
-
-            Result.failure(e)
+            Log.d("StoryRepository", "Uusi satu tallennettu: $storyId")
+            storyId
         }
     }
 
-    fun getStories() = storyDao.getAllStories()
-    suspend fun getStory(id: String) = storyDao.getStoryById(id)
+    // 4. Poisto (Local + WorkManager)
+    suspend fun deleteStory(storyId: String) {
+        // Poista heti UI:sta
+        storyDao.deleteStory(storyId)
+
+        // Jonota pilvipoisto
+        val workRequest = OneTimeWorkRequestBuilder<DeleteStoryWorker>()
+            .setInputData(workDataOf("STORY_ID" to storyId))
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "delete_$storyId",
+            ExistingWorkPolicy.KEEP,
+            workRequest
+        )
+    }
 }
