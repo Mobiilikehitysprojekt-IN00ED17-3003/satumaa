@@ -11,7 +11,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,15 +25,20 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import fi.antero.satumaa.ui.components.AppPageLayout
 import fi.antero.satumaa.ui.components.AppTopBar
+import fi.antero.satumaa.ui.components.story.StoryLength
+import fi.antero.satumaa.ui.components.story.StoryLengthSelector
+import fi.antero.satumaa.ui.components.story.StoryStyle
+import fi.antero.satumaa.ui.components.story.StoryStyleSelector
 import fi.antero.satumaa.ui.navigation.RootRoute
 import fi.antero.satumaa.ui.theme.LocalAppImages
 import fi.antero.satumaa.ui.theme.StorybookPaper
-import fi.antero.satumaa.ui.viewmodel.story.StoryScreenState
+import fi.antero.satumaa.ui.viewmodel.story.StoryUiState
 import fi.antero.satumaa.ui.viewmodel.story.StoryViewModel
 
 @Composable
 fun StoryScreen(
     userName: String,
+    storyId: String? = null,
     onNavigate: (String) -> Unit,
     viewModel: StoryViewModel = hiltViewModel()
 ) {
@@ -42,25 +46,33 @@ fun StoryScreen(
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
 
-    // Kolme taikasanaa
     var word1 by remember { mutableStateOf("") }
     var word2 by remember { mutableStateOf("") }
     var word3 by remember { mutableStateOf("") }
 
-    // Rullataan alas kun satu valmistuu
+    var selectedLength by remember { mutableStateOf(StoryLength.NORMAL) }
+    var selectedStyle by remember { mutableStateOf(StoryStyle.DEFAULT) }
+
+    LaunchedEffect(storyId) {
+        if (storyId != null) {
+            viewModel.loadStory(storyId)
+        }
+    }
+
     LaunchedEffect(uiState) {
-        if (uiState is StoryScreenState.Success) {
-            scrollState.animateScrollTo(scrollState.maxValue)
+        if (uiState is StoryUiState.Success) {
+            scrollState.scrollTo(0)
         }
     }
 
     AppPageLayout(
-        backgroundImageRes = LocalAppImages.current.storyListBackground, // Sama tausta koko ajan
+        backgroundImageRes = LocalAppImages.current.storyListBackground,
         topBar = {
             AppTopBar(
                 overrideTitle = "Sadun Taikaa",
                 showBack = true,
-                onBack = { onNavigate(RootRoute.Menu.route) }
+                onBack = { onNavigate(RootRoute.Menu.route) },
+                onOpenLibrary = { onNavigate(RootRoute.StoryList.route) }
             )
         }
     ) { padding ->
@@ -73,192 +85,131 @@ fun StoryScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-
-            // --- OHJE ---
-            if (uiState !is StoryScreenState.Success) {
+            if (uiState !is StoryUiState.Success && uiState !is StoryUiState.Loading) {
                 Text(
                     text = "Kirjoita kolme taikasanaa,\nniin $userName saa sadun!",
                     style = MaterialTheme.typography.titleMedium,
                     color = StorybookPaper,
                     textAlign = TextAlign.Center
                 )
-            }
 
-            // --- SYÖTTEET ---
-            // Näytetään syötteet vain jos ei olla lataamassa
-            if (uiState !is StoryScreenState.Loading) {
-                MagicWordInput(
-                    value = word1,
-                    onValueChange = { word1 = it },
-                    label = "1. Taikasana (esim. Lohikäärme)",
-                    imeAction = ImeAction.Next
+                MagicWordInput(word1, { word1 = it }, "1. Taikasana", ImeAction.Next)
+                MagicWordInput(word2, { word2 = it }, "2. Taikasana", ImeAction.Next)
+                MagicWordInput(word3, { word3 = it }, "3. Taikasana", ImeAction.Done) { focusManager.clearFocus() }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                StoryLengthSelector(
+                    selectedLength = selectedLength,
+                    onLengthSelected = { selectedLength = it }
                 )
-                MagicWordInput(
-                    value = word2,
-                    onValueChange = { word2 = it },
-                    label = "2. Taikasana (esim. Linna)",
-                    imeAction = ImeAction.Next
-                )
-                MagicWordInput(
-                    value = word3,
-                    onValueChange = { word3 = it },
-                    label = "3. Taikasana (esim. Ystävyys)",
-                    imeAction = ImeAction.Done,
-                    onDone = { focusManager.clearFocus() }
+
+                StoryStyleSelector(
+                    selectedStyle = selectedStyle,
+                    onStyleSelected = { selectedStyle = it }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // --- ISO NAPPI ---
                 Button(
                     onClick = {
-                        focusManager.clearFocus()
-                        viewModel.generateStory(userName, word1, word2, word3)
+                        viewModel.generateStory(
+                            userName,
+                            word1, word2, word3,
+                            selectedLength,
+                            selectedStyle
+                        )
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = Color.White
-                    ),
+                    modifier = Modifier.fillMaxWidth().height(64.dp),
                     shape = RoundedCornerShape(16.dp),
-                    elevation = ButtonDefaults.buttonElevation(8.dp)
-                ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(28.dp))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        "TAIO SATU!",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = StorybookPaper,
+                        contentColor = Color.Black
                     )
+                ) {
+                    Icon(Icons.Default.AutoAwesome, null)
+                    Spacer(Modifier.width(12.dp))
+                    Text("TAIO SATU!", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 }
             }
 
-            // --- LATAUSANIMAATIO ---
-            if (uiState is StoryScreenState.Loading) {
-                Box(modifier = Modifier.padding(40.dp)) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(60.dp),
-                        color = StorybookPaper,
-                        strokeWidth = 6.dp
-                    )
-                }
+            if (uiState is StoryUiState.Loading) {
+                CircularProgressIndicator(color = StorybookPaper)
                 Text("Taikuutta ilmassa...", color = StorybookPaper)
             }
 
-            // --- VIRHEILMOITUS ---
-            if (uiState is StoryScreenState.Error) {
-                Surface(
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = (uiState as StoryScreenState.Error).message,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(16.dp),
-                        textAlign = TextAlign.Center
-                    )
-                }
-                Button(onClick = { viewModel.resetState() }) {
-                    Text("Yritä uudelleen")
-                }
+            if (uiState is StoryUiState.Error) {
+                Text((uiState as StoryUiState.Error).message, color = Color.Red)
+                Button(onClick = { viewModel.resetState() }) { Text("Yritä uudelleen") }
             }
 
-            // --- VALMIS SATU ---
-            AnimatedVisibility(
-                visible = uiState is StoryScreenState.Success,
-                enter = fadeIn()
-            ) {
-                if (uiState is StoryScreenState.Success) {
-                    val story = (uiState as StoryScreenState.Success).story
-
+            AnimatedVisibility(uiState is StoryUiState.Success, enter = fadeIn()) {
+                if (uiState is StoryUiState.Success) {
+                    val story = (uiState as StoryUiState.Success).story
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = Color.Black.copy(alpha = 0.6f),
-                                shape = RoundedCornerShape(16.dp)
-                            )
+                            .background(Color.Black.copy(0.6f), RoundedCornerShape(16.dp))
                             .padding(24.dp)
                     ) {
-                        // Otsikko
                         Text(
                             text = story.title,
                             style = MaterialTheme.typography.headlineMedium,
                             color = StorybookPaper,
-                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
+                            fontWeight = FontWeight.Bold
                         )
-
-                        Divider(
-                            color = StorybookPaper.copy(alpha = 0.5f),
-                            modifier = Modifier.padding(vertical = 16.dp)
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            color = StorybookPaper.copy(0.5f)
                         )
-
-                        // Sisältö
                         Text(
                             text = story.content,
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                lineHeight = 32.sp,
-                                fontSize = 18.sp
-                            ),
-                            color = StorybookPaper.copy(alpha = 0.95f)
+                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 32.sp),
+                            color = StorybookPaper
                         )
 
-                        Spacer(modifier = Modifier.height(32.dp))
-
-                        // Nappi uuden luomiseen
-                        Button(
-                            onClick = {
-                                word1 = ""
-                                word2 = ""
-                                word3 = ""
-                                viewModel.resetState()
-                            },
-                            modifier = Modifier.align(Alignment.CenterHorizontally),
-                            colors = ButtonDefaults.buttonColors(containerColor = StorybookPaper, contentColor = Color.Black)
-                        ) {
-                            Text("Tee uusi satu")
+                        if (storyId == null) {
+                            Button(
+                                onClick = {
+                                    viewModel.resetState()
+                                    word1 = ""
+                                    word2 = ""
+                                    word3 = ""
+                                },
+                                modifier = Modifier.padding(top = 32.dp).align(Alignment.CenterHorizontally),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = StorybookPaper.copy(alpha = 0.2f),
+                                    contentColor = StorybookPaper
+                                )
+                            ) {
+                                Text("Tee uusi satu")
+                            }
                         }
                     }
                 }
             }
-
-
             Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
-
 @Composable
-fun MagicWordInput(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    imeAction: ImeAction,
-    onDone: () -> Unit = {}
-) {
+fun MagicWordInput(value: String, onValueChange: (String) -> Unit, label: String, imeAction: ImeAction, onDone: () -> Unit = {}) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label, color = StorybookPaper.copy(alpha = 0.8f)) },
+        label = { Text(label, color = StorybookPaper.copy(0.8f)) },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = imeAction),
         keyboardActions = KeyboardActions(onDone = { onDone() }),
+        shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = StorybookPaper,
-            unfocusedBorderColor = StorybookPaper.copy(alpha = 0.5f),
             focusedTextColor = StorybookPaper,
             unfocusedTextColor = StorybookPaper,
-            cursorColor = StorybookPaper
-        ),
-        leadingIcon = {
-            Icon(Icons.Default.Star, contentDescription = null, tint = StorybookPaper.copy(alpha = 0.7f))
-        },
-        shape = RoundedCornerShape(12.dp)
+            focusedBorderColor = StorybookPaper,
+            unfocusedBorderColor = StorybookPaper.copy(0.5f)
+        )
     )
 }

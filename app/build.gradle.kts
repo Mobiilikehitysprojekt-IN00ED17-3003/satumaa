@@ -5,7 +5,6 @@ plugins {
     id("kotlin-kapt")
     alias(libs.plugins.hilt)
     alias(libs.plugins.google.services)
-
     alias(libs.plugins.firebase.crashlytics)
 }
 
@@ -60,10 +59,14 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
 
+    
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
+
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.hilt.work)
+
+    kapt(libs.androidx.hilt.compiler)
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
