@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController // LISÄTTY
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -46,6 +47,7 @@ fun StoryScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current // LISÄTTY
 
     var word1 by remember { mutableStateOf("") }
     var word2 by remember { mutableStateOf("") }
@@ -106,7 +108,10 @@ fun StoryScreen(
 
                 MagicWordInput(word1, { word1 = it }, "1. Taikasana", ImeAction.Next)
                 MagicWordInput(word2, { word2 = it }, "2. Taikasana", ImeAction.Next)
-                MagicWordInput(word3, { word3 = it }, "3. Taikasana", ImeAction.Done) { focusManager.clearFocus() }
+                MagicWordInput(word3, { word3 = it }, "3. Taikasana", ImeAction.Done) {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                }
 
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -124,6 +129,9 @@ fun StoryScreen(
 
                 Button(
                     onClick = {
+                        keyboardController?.hide()
+                        focusManager.clearFocus()
+
                         viewModel.generateStory(
                             userName,
                             word1, word2, word3,

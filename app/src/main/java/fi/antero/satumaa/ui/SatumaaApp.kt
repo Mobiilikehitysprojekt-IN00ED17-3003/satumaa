@@ -31,7 +31,6 @@ fun SatumaaApp() {
         navController = navController,
         startDestination = RootRoute.Login.route
     ) {
-        // --- KIRJAUTUMINEN ---
         composable(RootRoute.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
@@ -42,7 +41,6 @@ fun SatumaaApp() {
             )
         }
 
-        // --- ONBOARDING (Nimen kysyminen) ---
         composable(RootRoute.Onboarding.route) {
             OnboardingScreen(
                 onNameSubmitted = { name ->
@@ -54,7 +52,6 @@ fun SatumaaApp() {
             )
         }
 
-        // --- PÄÄVALIKKO ---
         composable(RootRoute.Menu.route) {
             MenuScreen(
                 currentRoute = currentRoute,
@@ -63,9 +60,8 @@ fun SatumaaApp() {
             )
         }
 
-        // --- YKSITTÄINEN SATU (ID:llä) ---
         composable(
-            route = "story?storyId={storyId}",
+            route = RootRoute.Story.route + "?storyId={storyId}",
             arguments = listOf(navArgument("storyId") { nullable = true })
         ) { entry ->
             val storyId = entry.arguments?.getString("storyId")
@@ -76,23 +72,19 @@ fun SatumaaApp() {
             )
         }
 
-        // --- SATULISTA ---
         composable(RootRoute.StoryList.route) {
             StoryListScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onStoryClick = { id ->
-                    // Navigoidaan story-ruutuun ID:n kanssa
-                    navController.navigate("story?storyId=$id")
+                    navController.navigate(RootRoute.Story.createRoute(id))
                 }
             )
         }
 
-        // --- KIRJEIDEN LUONTI ---
         composable(RootRoute.Letter.route) {
             LetterFlowScreen(currentRoute, navigate)
         }
 
-        // --- PROFIILI ---
         composable(RootRoute.Profile.route) {
             ProfileScreen(
                 currentRoute = currentRoute,
