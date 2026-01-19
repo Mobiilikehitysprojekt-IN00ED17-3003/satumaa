@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import fi.antero.satumaa.data.repository.AuthRepository
+import fi.antero.satumaa.util.toUserFriendlyMessage // UUSI IMPORT
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +23,6 @@ class AuthViewModel @Inject constructor(
     init {
         val currentUser = repository.currentUser
         if (currentUser != null) {
-            // Jos käyttäjä on jo kirjautunut, haetaan token silloinkin lokitusta varten
             Log.e("TOKEN_DEBUG", "Käyttäjä valmiiksi kirjautunut: ${currentUser.email}")
             currentUser.getIdToken(true).addOnCompleteListener { task ->
                 if (task.isSuccessful) {
@@ -44,7 +44,8 @@ class AuthViewModel @Inject constructor(
             result.onSuccess { user ->
                 _uiState.value = AuthUiState.Success(user)
             }.onFailure { error ->
-                _uiState.value = AuthUiState.Error(error.localizedMessage ?: "Anonyymi kirjautuminen epäonnistui")
+
+                _uiState.value = AuthUiState.Error(error.toUserFriendlyMessage())
             }
         }
     }
@@ -58,7 +59,6 @@ class AuthViewModel @Inject constructor(
 
             result.onSuccess { user ->
                 Log.e("TOKEN_DEBUG", "Repository palautti Success!")
-                // Haetaan token uunituoreelta käyttäjältä lokitusta varten
                 user.getIdToken(true).addOnCompleteListener { task ->
                     val token = task.result?.token
                     Log.e("TOKEN_DEBUG", "========================================")
@@ -68,7 +68,8 @@ class AuthViewModel @Inject constructor(
                 _uiState.value = AuthUiState.Success(user)
             }.onFailure { error ->
                 Log.e("TOKEN_DEBUG", "Kirjautuminen epäonnistui: ${error.message}")
-                _uiState.value = AuthUiState.Error(error.localizedMessage ?: "Tuntematon virhe")
+
+                _uiState.value = AuthUiState.Error(error.toUserFriendlyMessage())
             }
         }
     }

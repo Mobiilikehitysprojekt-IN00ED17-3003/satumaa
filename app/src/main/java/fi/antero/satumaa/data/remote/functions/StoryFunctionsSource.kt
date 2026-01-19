@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.functions.FirebaseFunctions
 import kotlinx.coroutines.tasks.await
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 class StoryFunctionsSource @Inject constructor(
@@ -20,7 +21,6 @@ class StoryFunctionsSource @Inject constructor(
             ?: return Result.failure(Exception("Ei kirjautumista"))
 
         return try {
-            // Varmista tuore token
             user.getIdToken(true).await()
 
             val data = hashMapOf(
@@ -30,8 +30,10 @@ class StoryFunctionsSource @Inject constructor(
                 "style" to style
             )
 
+            // KORJATTU TAPA: Asetetaan timeout uudemmalla syntaksilla
             val result = functions
                 .getHttpsCallable("generateStory")
+                .withTimeout(30, TimeUnit.SECONDS) // Tämä korvaa vialliset rivit
                 .call(data)
                 .await()
 

@@ -1,4 +1,3 @@
-// app/src/main/java/fi/antero/satumaa/ui/screens/onboarding/OnboardingScreen.kt
 package fi.antero.satumaa.ui.screens.onboarding
 
 import androidx.compose.foundation.background

@@ -29,7 +29,6 @@ fun StoryListScreen(
 ) {
     val stories by viewModel.stories.collectAsState()
 
-    // PÄIVITETTY: Tila käyttää nyt Story-mallia
     var storyToDelete by remember { mutableStateOf<Story?>(null) }
 
     AppPageLayout(
@@ -67,7 +66,6 @@ fun StoryListScreen(
             }
         }
 
-        // --- VARMISTUSDIALOGI ---
         if (storyToDelete != null) {
             AlertDialog(
                 onDismissRequest = { storyToDelete = null },

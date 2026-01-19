@@ -57,7 +57,6 @@ fun MenuScreen(
             verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Keskitetty tervehdysosio
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
