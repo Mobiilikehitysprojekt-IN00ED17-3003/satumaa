@@ -1,6 +1,7 @@
 package fi.antero.satumaa.ui.screens.auth
 
 import android.app.Activity
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -33,7 +34,10 @@ fun LoginScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
+    // Paikallinen tila Google-kirjautumisen Intent-virheille (ennen kuin päästään ViewModeliin)
+    var googleError by remember { mutableStateOf<String?>(null) }
 
+    // TÄRKEÄ: Tämä id haetaan resursseista (Main branchin korjaus)
     val googleClientId = context.getString(R.string.default_web_client_id)
 
     val googleSignInClient = remember {
@@ -41,25 +45,46 @@ fun LoginScreen(
             .requestIdToken(googleClientId)
             .requestEmail()
             .build()
+
         GoogleSignIn.getClient(context, gso)
     }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        // Tyhjennetään vanhat virheet
+        googleError = null
+
         if (result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
+                // Yritetään kaivaa tili vastauksesta (Miron lisäys: tarkempi logitus)
                 val account = task.getResult(ApiException::class.java)
-                account.idToken?.let { viewModel.signInWithGoogle(it) }
+                val idToken = account.idToken
+
+                if (!idToken.isNullOrBlank()) {
+                    Log.d("AUTH", "Google account ok, token found.")
+                    viewModel.signInWithGoogle(idToken)
+                } else {
+                    Log.e("AUTH", "Kirjautuminen epäonnistui: idToken puuttuu.")
+                    googleError = "Google-kirjautuminen epäonnistui (tunniste puuttuu)."
+                }
+
             } catch (e: ApiException) {
-                // Voitaisiin lähettää ViewModelille tieto peruutuksesta
+                // TÄRKEÄ: Näytetään virhe (Miron lisäys)
+                val msg = "Google Sign-In epäonnistui (koodi ${e.statusCode})."
+                Log.e("AUTH", msg, e)
+                googleError = "Google-kirjautuminen epäonnistui. Yritä uudelleen."
             }
+        } else {
+            Log.d("AUTH", "Google Sign-In peruutettu tai epäonnistui (resultCode=${result.resultCode})")
         }
     }
 
+    // Kuunnellaan ViewModelin tilaa navigointia varten
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
+            Log.d("AUTH", "AuthUiState.Success -> navigate")
             onLoginSuccess()
         }
     }
@@ -80,7 +105,6 @@ fun LoginScreen(
         ) {
             Spacer(modifier = Modifier.weight(3f))
 
-            // Logo tai Otsikko voisi olla tässä välissä
             Text(
                 text = "Tervetuloa Satumaahan",
                 style = MaterialTheme.typography.headlineMedium,
@@ -90,7 +114,9 @@ fun LoginScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             Box(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(2f), // Varmistetaan tila sisällölle
                 contentAlignment = Alignment.Center
             ) {
                 when (uiState) {
@@ -98,14 +124,35 @@ fun LoginScreen(
                     is AuthUiState.Error -> {
                         ErrorView(
                             message = (uiState as AuthUiState.Error).message,
-                            onRetry = { viewModel.signInAnonymously() } // Tai Google-vaihtoehto
+                            onRetry = {
+                                googleError = null
+                                viewModel.resetState()
+                            }
                         )
                     }
                     else -> {
-                        LoginButtons(
-                            onGoogleClick = { launcher.launch(googleSignInClient.signInIntent) },
-                            onAnonymousClick = { viewModel.signInAnonymously() }
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            // Näytetään mahdolliset launcher-virheet tässä
+                            googleError?.let {
+                                Text(
+                                    text = it,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                )
+                            }
+
+                            LoginButtons(
+                                onGoogleClick = {
+                                    googleError = null
+                                    launcher.launch(googleSignInClient.signInIntent)
+                                },
+                                onAnonymousClick = {
+                                    googleError = null
+                                    viewModel.signInAnonymously()
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -122,9 +169,12 @@ private fun LoginButtons(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Button(
             onClick = onGoogleClick,
-            modifier = Modifier.fillMaxWidth(0.8f).padding(bottom = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .padding(bottom = 12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
+            // Huom: Varmista että R.drawable.ic_google löytyy, tai korvaa Icons.Defaultilla
             Icon(
                 painter = painterResource(id = R.drawable.ic_google),
                 contentDescription = null,
