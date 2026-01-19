@@ -35,7 +35,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    // --- KORJATTU FUNKTIO ---
     fun signInAnonymously() {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
@@ -43,14 +42,12 @@ class AuthViewModel @Inject constructor(
             val result = repository.signInAnonymously()
 
             result.onSuccess { user ->
-                // TÄSSÄ OLI VIRHE: Nyt annamme user-objektin Success-tilaan
                 _uiState.value = AuthUiState.Success(user)
             }.onFailure { error ->
                 _uiState.value = AuthUiState.Error(error.localizedMessage ?: "Anonyymi kirjautuminen epäonnistui")
             }
         }
     }
-    // ------------------------
 
     fun signInWithGoogle(idToken: String) {
         Log.e("TOKEN_DEBUG", "signInWithGoogle kutsuttu! ID Tokenin pituus: ${idToken.length}")
@@ -79,6 +76,10 @@ class AuthViewModel @Inject constructor(
     fun signOut() {
         Log.e("TOKEN_DEBUG", "Kirjaudutaan ulos.")
         repository.signOut()
+        _uiState.value = AuthUiState.Idle
+    }
+
+    fun resetState() {
         _uiState.value = AuthUiState.Idle
     }
 }
