@@ -25,3 +25,5 @@ val SurfaceVariantSoft = StorybookPaper2
 val OutlineSoft = Color(0xFFC9B8A8)
 
 val OverlayScrim = Color(0x7A000000)
+
+val StorybookBg = Color(0xFFF2EFE9)
