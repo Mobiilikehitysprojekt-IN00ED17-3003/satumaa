@@ -1,16 +1,24 @@
 package fi.antero.satumaa.ui.components
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person // Lisätty profiili-ikoni
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import fi.antero.satumaa.ui.theme.Forest
+import fi.antero.satumaa.ui.theme.Ink
+import fi.antero.satumaa.ui.theme.OutlineSoft
 import fi.antero.satumaa.ui.theme.StorybookPaper
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,8 +54,7 @@ fun AppTopBar(
             }
         },
         actions = {
-
-
+            // Valikkonappi
             IconButton(onClick = { setExpanded(true) }) {
                 Icon(
                     Icons.Default.MoreVert,
@@ -56,17 +63,36 @@ fun AppTopBar(
                 )
             }
 
+            // Tyylitelty pudotusvalikko
             DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { setExpanded(false) },
-                containerColor = MaterialTheme.colorScheme.surfaceVariant // Hieman erottuva tausta valikolle
+                // 1. Lämmin paperin väri taustaksi
+                containerColor = StorybookPaper,
+                // 2. Pyöristetyt kulmat (pehmeämpi ilme)
+                shape = RoundedCornerShape(16.dp),
+                // 3. Hienovarainen reunus
+                border = BorderStroke(1.dp, OutlineSoft),
+                // Hieman varjoa erottamaan taustasta
+                shadowElevation = 4.dp,
+                modifier = Modifier.padding(end = 8.dp) // Pieni väli reunaan
             ) {
 
                 if (onOpenLibrary != null) {
                     DropdownMenuItem(
-                        text = { Text("Omat sadut") },
+                        text = {
+                            Text(
+                                "Omat sadut",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Ink // Tumma teksti
+                            )
+                        },
                         leadingIcon = {
-                            Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
+                            Icon(
+                                Icons.AutoMirrored.Filled.List,
+                                contentDescription = null,
+                                tint = Forest // Vihreä teemaväri
+                            )
                         },
                         onClick = {
                             setExpanded(false)
@@ -77,7 +103,21 @@ fun AppTopBar(
 
                 if (onOpenProfile != null) {
                     DropdownMenuItem(
-                        text = { Text("Profiili") },
+                        text = {
+                            Text(
+                                "Profiili",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Ink
+                            )
+                        },
+                        leadingIcon = {
+                            // Lisätty ikoni myös profiilille symmetrian vuoksi
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                tint = Forest
+                            )
+                        },
                         onClick = {
                             setExpanded(false)
                             onOpenProfile()
