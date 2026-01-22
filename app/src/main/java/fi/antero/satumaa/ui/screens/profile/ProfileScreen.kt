@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -16,7 +17,6 @@ import fi.antero.satumaa.ui.components.AppTopBar
 import fi.antero.satumaa.ui.navigation.RootRoute
 import fi.antero.satumaa.ui.screens.profile.math.ProfileMathSection
 import fi.antero.satumaa.ui.theme.LocalAppImages
-import fi.antero.satumaa.ui.theme.StorybookPaper
 
 @Composable
 fun ProfileScreen(
@@ -28,7 +28,7 @@ fun ProfileScreen(
     val email = user?.email ?: "Ei sähköpostia"
 
     AppPageLayout(
-        backgroundImageRes = LocalAppImages.current.profileBackground, // Varmista että tässä on haluamasi kuva (esim. ratsu)
+        backgroundImageRes = LocalAppImages.current.profileBackground,
         topBar = {
             AppTopBar(
                 overrideTitle = "Profiili",
@@ -44,17 +44,16 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                // POISTETTU: .background(StorybookBg) -> Nyt taustakuva näkyy!
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            // --- KÄYTTÄJÄKORTTI ---
+
             Card(
                 colors = CardDefaults.cardColors(
-                    // Sama väri kuin MathCardeissa
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+
+                    containerColor = Color(0xFFFFF3E6).copy(alpha = 0.9f)
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -65,13 +64,13 @@ fun ProfileScreen(
                     Text(
                         text = "Kirjautunut käyttäjä:",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = Color(0xFF1B1B1F)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = email,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color(0xFF2E6B5B)
                     )
 
                     Spacer(modifier = Modifier.height(32.dp))
@@ -82,7 +81,8 @@ fun ProfileScreen(
                             onLogout()
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
+                            containerColor = Color(0xFFB4573A),
+                            contentColor = Color(0xFFFFF3E6)
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {

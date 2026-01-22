@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import fi.antero.satumaa.ui.screens.profile.math.components.*
-import fi.antero.satumaa.ui.theme.StorybookPaper
 import fi.antero.satumaa.ui.viewmodel.stats.StatsViewModel
 
 @Composable
@@ -33,14 +32,11 @@ fun ProfileMathSection(
     val timeRange by viewModel.timeRange.collectAsState()
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth(),
-        // Poistettu padding(16.dp) tästä, koska ProfileScreenissä on jo padding.
-        // Tämä estää sen, että sisältö on liian kapea.
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Otsikko varjolla, jotta se näkyy taustakuvan päällä
+        // Otsikko varjolla (Valkoinen teksti, musta varjo takaa näkyvyyden kaikilla taustoilla)
         Text(
             text = "Tilastot & Taika",
             style = MaterialTheme.typography.headlineMedium.copy(
@@ -50,7 +46,7 @@ fun ProfileMathSection(
                     blurRadius = 4f
                 )
             ),
-            color = StorybookPaper,
+            color = Color(0xFFFFF3E6), // StorybookPaper
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
@@ -58,19 +54,14 @@ fun ProfileMathSection(
         if (uiState.isLoading) {
             Text(
                 "Lasketaan taikapölyä...",
-                color = StorybookPaper,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    shadow = Shadow(Color.Black.copy(alpha = 0.5f), Offset(1f, 1f), 2f)
-                )
+                color = Color(0xFFFFF3E6),
+                style = MaterialTheme.typography.bodyLarge
             )
         } else if (uiState.totalStories == 0) {
             Text(
                 "Ei vielä satuja analysoitavaksi.\nLuo ensimmäinen satusi!",
-                color = StorybookPaper,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    shadow = Shadow(Color.Black.copy(alpha = 0.5f), Offset(1f, 1f), 2f)
-                )
+                color = Color(0xFFFFF3E6),
+                textAlign = TextAlign.Center
             )
         } else {
             // 1. Aktiivisuus
@@ -86,6 +77,7 @@ fun ProfileMathSection(
                 WeeklyActivityChart(uiState = uiState)
             }
 
+            // 2. Mieltymykset
             MathCard(
                 title = "Taikasanojen voima",
                 description = "Mitkä taikasanat toistuvat useiten?"
@@ -93,14 +85,13 @@ fun ProfileMathSection(
                 KeywordsPieChart(uiState = uiState)
             }
 
+            // 3. Kehitys
             MathCard(
                 title = "Tarinoiden pituus & Trendi",
                 description = "Kasvaako tarinoiden pituus ajan myötä?"
             ) {
                 TrendCombinedChart(uiState = uiState)
-
                 Spacer(modifier = Modifier.height(12.dp))
-
                 Text(
                     text = "Punainen viiva = Matemaattinen trendi (PNS)",
                     style = MaterialTheme.typography.bodySmall,
@@ -110,7 +101,7 @@ fun ProfileMathSection(
                 )
             }
 
-
+            // 4. Seikkailumittari
             MathCard(
                 title = "Seikkailumittari",
                 description = "Analyysi sadun pituuden ja jännityksen suhteesta"
@@ -118,7 +109,7 @@ fun ProfileMathSection(
                 Text(
                     text = "Paina kuvakkeita nähdäksesi pisteet!",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = Color(0xFF2E6B5B),
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
@@ -127,7 +118,7 @@ fun ProfileMathSection(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Surface(
-                    color = Color.Gray.copy(alpha = 0.05f),
+                    color = Color.Black.copy(alpha = 0.05f),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -136,12 +127,12 @@ fun ProfileMathSection(
                             text = "Miten pisteet lasketaan?",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                            color = Color(0xFF1B1B1F)
                         )
                         Text(
                             text = "Algoritmi etsii jännitystä kuvaavia sanoja (kuten lohikäärme, miekka, aarre, sankari jne) ja huutomerkkejä. Pisteet suhteutetaan sadun pituuteen.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.DarkGray,
+                            color = Color(0xFF2A2A31),
                             lineHeight = 16.sp
                         )
                     }
@@ -176,7 +167,7 @@ fun MathCard(
     Card(
         colors = CardDefaults.cardColors(
 
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+            containerColor = Color(0xFFFFF3E6).copy(alpha = 0.9f)
         ),
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
@@ -189,7 +180,7 @@ fun MathCard(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface, // Ink / Tumma
+                color = Color(0xFF1B1B1F),
                 textAlign = TextAlign.Center
             )
 

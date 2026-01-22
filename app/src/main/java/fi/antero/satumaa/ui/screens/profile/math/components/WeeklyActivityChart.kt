@@ -16,6 +16,7 @@ import co.yml.charts.common.model.Point
 import co.yml.charts.ui.barchart.BarChart
 import co.yml.charts.ui.barchart.models.BarChartData
 import co.yml.charts.ui.barchart.models.BarData
+import co.yml.charts.ui.barchart.models.BarStyle
 import fi.antero.satumaa.ui.viewmodel.stats.StatsUiState
 import kotlin.math.max
 
@@ -26,14 +27,18 @@ fun WeeklyActivityChart(uiState: StatsUiState) {
     val scrollState = rememberScrollState()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
 
+
+    val fixedTextColor = Color(0xFF1B1B1F)
+
     val realBars = uiState.weeklyStats.mapIndexed { index, stat ->
         BarData(
             point = Point(x = (index + 1).toFloat(), y = stat.storyCount.toFloat()),
-            color = Color(0xFF6750A4),
+            color = Color(0xFF2E6B5B),
             label = stat.weekLabel,
             description = "${stat.storyCount} satua"
         )
     }
+
 
     val spacerStart = BarData(
         point = Point(x = 0f, y = 0f),
@@ -58,6 +63,8 @@ fun WeeklyActivityChart(uiState: StatsUiState) {
         .steps(xSteps)
         .bottomPadding(16.dp)
         .labelData { index -> barData.getOrNull(index)?.label ?: "" }
+        .axisLabelColor(fixedTextColor)
+        .axisLineColor(fixedTextColor)
         .build()
 
     val rawMax = max(uiState.maxStoryCount, 1)
@@ -69,13 +76,19 @@ fun WeeklyActivityChart(uiState: StatsUiState) {
         .labelData { index ->
             if (index % 5 == 0) index.toString() else ""
         }
+        .axisLabelColor(fixedTextColor)
+        .axisLineColor(fixedTextColor)
         .build()
 
     val barChartData = BarChartData(
         chartData = barData,
         xAxisData = xAxisData,
         yAxisData = yAxisData,
-        backgroundColor = Color.Transparent
+        backgroundColor = Color.Transparent,
+        barStyle = BarStyle(
+            paddingBetweenBars = 20.dp,
+            barWidth = 30.dp
+        )
     )
 
     val stepWidth = 46.dp
