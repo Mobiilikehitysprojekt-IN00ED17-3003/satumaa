@@ -35,7 +35,7 @@ fun KeywordsPieChart(uiState: StatsUiState) {
         plotType = PlotType.Donut
     )
 
-    // SÄÄDETTY CONFIG: Lisätty chartPadding ja pienennetty strokeWidthia suhteessa kokoon
+    // SÄÄDETTY CONFIG: Kiinteät värit lisätty
     val pieChartConfig = PieChartConfig(
         isAnimationEnable = true,
         showSliceLabels = false,
@@ -44,7 +44,8 @@ fun KeywordsPieChart(uiState: StatsUiState) {
         isSumVisible = false,
         strokeWidth = 100f,
         chartPadding = 25,
-        isClickOnSliceEnabled = true
+        isClickOnSliceEnabled = true,
+        labelColor = Color(0xFF1B1B1F)
     )
 
     Column(
@@ -71,19 +72,19 @@ fun KeywordsPieChart(uiState: StatsUiState) {
                 }
             )
 
-            // Teksti donitsin keskellä
+
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = selectedWord,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color(0xFF1B1B1F)
                 )
                 if (selectedCount.isNotEmpty()) {
                     Text(
                         text = selectedCount,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = Color.DarkGray
                     )
                 }
             }
