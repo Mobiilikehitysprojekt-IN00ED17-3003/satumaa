@@ -12,15 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// UI-tila kirjeen lähetykselle ja vastaukselle
-data class LetterUiState(
-    val text: String = "",
-    val isSending: Boolean = false,
-    val status: String? = null, // replying | replied | error
-    val replyText: String? = null,
-    val error: String? = null,
-    val usedOfflineDemo: Boolean = false // Kertoo jos ollaan demo-moodissa
-)
 
 class LetterViewModel(
     private val repo: LetterRepository = LetterRepositoryImpl(),
@@ -43,28 +34,22 @@ class LetterViewModel(
             return
         }
 
-        // Asetetaan tila odottamaan vastausta
-        _uiState.update { 
-            it.copy(isSending = true, status = "replying", error = null, replyText = null) 
+        _uiState.update {
+            it.copy(isSending = true, status = "replying", error = null, replyText = null)
         }
 
-        // Lähetys yritys backendiin
         repo.sendLetter(content)
             .addOnSuccessListener { doc ->
                 _uiState.update { it.copy(text = "", isSending = false, usedOfflineDemo = false) }
                 listenToLetter(doc.id)
             }
             .addOnFailureListener { e ->
-                // Jos backend ei vastaa, siirrytään demo-vastaussimulaatioon
                 startOfflineDemoReply(
                     originalError = e.message ?: "Backend ei käytössä / oikeudet puuttuvat"
                 )
             }
     }
 
-    /**
-     * Mahdollistaa vastauksen simuloinnin esim. testi-napista
-     */
     fun simulateReply() {
         startOfflineDemoReply(originalError = null)
     }
@@ -78,18 +63,17 @@ class LetterViewModel(
                 isSending = false,
                 status = "replying",
                 usedOfflineDemo = true,
-                error = originalError 
+                error = originalError
             )
         }
 
-        // Simuloidaan pukin vastausviive
         viewModelScope.launch {
-            delay(1200) 
+            delay(1200)
             _uiState.update { state ->
                 state.copy(
                     status = "replied",
                     replyText = "Ho ho ho! Kiitos kirjeestäsi 🎅🎁\nTerveisin, Joulupukki",
-                    error = null 
+                    error = null
                 )
             }
         }
