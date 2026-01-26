@@ -3,14 +3,15 @@ package fi.antero.satumaa.viewmodel.letter
 import android.location.Location
 
 data class LetterUiState(
-    // Letter related state
+    // Kirjeeseen liittyvät tilat
     val text: String = "",
     val isSending: Boolean = false,
-    val status: String? = null, // "replying", "replied", "error"
+    val status: String? = null,
     val replyText: String? = null,
     val error: String? = null,
+    val usedOfflineDemo: Boolean = false,
 
-    // Map and Location related state
+
     val userLocation: Location? = null,
     val distanceToSantaKm: Double? = null,
     val isLocating: Boolean = false,
