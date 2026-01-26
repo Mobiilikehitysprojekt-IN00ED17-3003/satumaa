@@ -13,5 +13,7 @@ sealed class RootRoute(val route: String) {
 
     data object StoryList : RootRoute("story_list")
     data object Letter : RootRoute("letter")
+
+    data object LetterMap : RootRoute("letter_map")
     data object Profile : RootRoute("profile")
 }

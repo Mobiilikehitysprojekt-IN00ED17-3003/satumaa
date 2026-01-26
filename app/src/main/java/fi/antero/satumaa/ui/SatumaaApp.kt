@@ -8,6 +8,7 @@ import fi.antero.satumaa.ui.navigation.RootRoute
 import fi.antero.satumaa.ui.screens.auth.LoginScreen
 import fi.antero.satumaa.ui.screens.letter.LetterCameraScreen
 import fi.antero.satumaa.ui.screens.letter.LetterFlowScreen
+import fi.antero.satumaa.ui.screens.letter.LetterMapScreen
 import fi.antero.satumaa.ui.screens.menu.MenuScreen
 import fi.antero.satumaa.ui.screens.onboarding.OnboardingScreen
 import fi.antero.satumaa.ui.screens.profile.ProfileScreen
@@ -91,12 +92,17 @@ fun SatumaaApp() {
             )
         }
 
-        // ✅ UUSI: Kirjeen kamera/AR
+        // Kirjeen kamera/AR
         composable(LetterRoutes.CAMERA) {
             LetterCameraScreen(
                 onFoundLetter = { navController.popBackStack() },
                 onBack = { navController.popBackStack() }
             )
+        }
+
+        // UUSI: Kirjeen kartta (osmdroid)
+        composable(RootRoute.LetterMap.route) {
+            LetterMapScreen(onBack = { navController.popBackStack() })
         }
 
         composable(RootRoute.Profile.route) {

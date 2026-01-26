@@ -1,4 +1,4 @@
-package fi.antero.satumaa.viewmodel
+package fi.antero.satumaa.viewmodel.letter
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,13 +12,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+// UI-tila kirjeen lähetykselle ja vastaukselle
 data class LetterUiState(
     val text: String = "",
     val isSending: Boolean = false,
     val status: String? = null, // replying | replied | error
     val replyText: String? = null,
     val error: String? = null,
-    val usedOfflineDemo: Boolean = false // ✅ uusi: kerrotaan käytettiinkö demo-moodia
+    val usedOfflineDemo: Boolean = false // Kertoo jos ollaan demo-moodissa
 )
 
 class LetterViewModel(
@@ -42,18 +43,19 @@ class LetterViewModel(
             return
         }
 
-        // UI heti “lähettää/odottaa”
-        _uiState.update { it.copy(isSending = true, status = "replying", error = null, replyText = null) }
+        // Asetetaan tila odottamaan vastausta
+        _uiState.update { 
+            it.copy(isSending = true, status = "replying", error = null, replyText = null) 
+        }
 
-        // Yritetään normaalisti backendin kautta
+        // Lähetys yritys backendiin
         repo.sendLetter(content)
             .addOnSuccessListener { doc ->
                 _uiState.update { it.copy(text = "", isSending = false, usedOfflineDemo = false) }
                 listenToLetter(doc.id)
             }
             .addOnFailureListener { e ->
-                // ✅ Jos backend ei ole valmis / säännöt estää → mennään demo/offline-moodiin,
-                // jotta AR-ominaisuutta voidaan kehittää ja demota.
+                // Jos backend ei vastaa, siirrytään demo-vastaussimulaatioon
                 startOfflineDemoReply(
                     originalError = e.message ?: "Backend ei käytössä / oikeudet puuttuvat"
                 )
@@ -61,35 +63,33 @@ class LetterViewModel(
     }
 
     /**
-     * Dev-nappi voi kutsua tätä suoraan.
+     * Mahdollistaa vastauksen simuloinnin esim. testi-napista
      */
     fun simulateReply() {
         startOfflineDemoReply(originalError = null)
     }
 
     private fun startOfflineDemoReply(originalError: String?) {
-        // Lopetetaan mahdollinen Firestore-kuuntelu
         listener?.remove()
         listener = null
 
-        // Näytetään virheteksti, mutta annetaan silti edetä
         _uiState.update {
             it.copy(
                 isSending = false,
                 status = "replying",
                 usedOfflineDemo = true,
-                error = originalError // halutessa näytetään “backend puuttuu”, mutta flow jatkuu
+                error = originalError 
             )
         }
 
-        // Simuloidaan pukin vastaus pienellä viiveellä
+        // Simuloidaan pukin vastausviive
         viewModelScope.launch {
-            delay(1200) // 1.2s
+            delay(1200) 
             _uiState.update { state ->
                 state.copy(
                     status = "replied",
                     replyText = "Ho ho ho! Kiitos kirjeestäsi 🎅🎁\nTerveisin, Joulupukki",
-                    error = null // piilotetaan virhe, jotta UX on siisti
+                    error = null 
                 )
             }
         }

@@ -16,7 +16,7 @@ import fi.antero.satumaa.ui.navigation.RootRoute
 import fi.antero.satumaa.ui.theme.AppDimensions
 import fi.antero.satumaa.ui.theme.LocalAppImages
 import fi.antero.satumaa.ui.theme.StorybookPaper
-import fi.antero.satumaa.viewmodel.LetterViewModel
+import fi.antero.satumaa.viewmodel.letter.LetterViewModel
 
 // Kirjeen kirjoitus- ja vastausnäkymä
 @Composable
@@ -95,7 +95,10 @@ fun LetterFlowScreen(
 
             // Lähetyspainike
             Button(
-                onClick = vm::sendLetter,
+                onClick = {
+                    vm.sendLetter()
+                    onNavigate(RootRoute.LetterMap.route) // Navigate to map when sending
+                },
                 enabled = state.text.trim().isNotEmpty() && !state.isSending,
                 modifier = Modifier.fillMaxWidth()
             ) {

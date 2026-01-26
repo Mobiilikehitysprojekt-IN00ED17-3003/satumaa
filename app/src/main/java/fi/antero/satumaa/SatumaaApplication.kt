@@ -8,6 +8,7 @@ import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import dagger.hilt.android.HiltAndroidApp
+import org.osmdroid.config.Configuration as OsmConfig
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -31,5 +32,7 @@ class SatumaaApplication : Application(), Configuration.Provider {
         } else {
             appCheck.installAppCheckProviderFactory(PlayIntegrityAppCheckProviderFactory.getInstance())
         }
+
+        OsmConfig.getInstance().userAgentValue = packageName
     }
 }

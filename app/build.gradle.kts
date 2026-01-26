@@ -48,6 +48,7 @@ android {
 }
 
 dependencies {
+    // Core Compose & Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -56,52 +57,59 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
 
+    // Navigation
     implementation(libs.androidx.navigation.compose)
 
-    
+    // Dependency Injection (Hilt)
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
-
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.hilt.work)
-
     kapt(libs.androidx.hilt.compiler)
 
+    // Local Database (Room)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     kapt(libs.androidx.room.compiler)
 
+    // Firebase (BOM hallitsee versiot)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
-
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.functions)
 
+    // App Check (Erityisesti debug-tuki kehitykseen)
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    debugImplementation("com.google.firebase:firebase-appcheck-debug")
+
+    // Kamera & AR-toiminnot
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
 
+    // Sijainti & Taustatyöt
     implementation(libs.play.services.location)
     implementation(libs.androidx.work.runtime.ktx)
-
-    implementation(libs.androidx.compose.material.icons.extended)
-
     implementation(libs.play.services.auth)
 
+    // Verkko & HTTP
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.squareup.okhttp3:logging-interceptor")
 
-    implementation("com.google.firebase:firebase-appcheck-playintegrity")
-    debugImplementation("com.google.firebase:firebase-appcheck-debug")
+    // Joonaksen lisäämä karttakirjasto
+    implementation(libs.osmdroid.android)
 
+    // Main-haaran lisäämät kaaviot ja laskenta
     implementation(libs.ycharts)
     implementation(libs.mathparser)
 
+    // Testaus
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
