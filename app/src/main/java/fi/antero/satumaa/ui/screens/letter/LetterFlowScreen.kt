@@ -18,19 +18,15 @@ import fi.antero.satumaa.ui.theme.LocalAppImages
 import fi.antero.satumaa.ui.theme.StorybookPaper
 import fi.antero.satumaa.viewmodel.letter.LetterViewModel
 
-// Kirjeen kirjoitus- ja vastausnäkymä
+// Kirjeen kirjoitusnäkymä: kirjoita + lähetä -> navigoi karttaan
 @Composable
 fun LetterFlowScreen(
-    currentRoute: String?,              // Nykyinen reitti (ei käytössä tässä)
-    onNavigate: (String) -> Unit         // Navigointifunktio
+    currentRoute: String?,
+    onNavigate: (String) -> Unit
 ) {
-    // ViewModel, joka hoitaa kirjeen tilan ja lähetyksen
     val vm: LetterViewModel = viewModel()
-
-    // UI-tila ViewModelista
     val state by vm.uiState.collectAsState()
 
-    // Sivupohja, jossa taustakuva ja yläpalkki
     AppPageLayout(
         backgroundImageRes = LocalAppImages.current.letterBackground,
         topBar = {
@@ -45,14 +41,9 @@ fun LetterFlowScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(
-                    horizontal = AppDimensions.ScreenPadding,
-                    vertical = 24.dp
-                ),
+                .padding(horizontal = AppDimensions.ScreenPadding, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            // Otsikko
             Text(
                 text = "Kirje Joulupukille",
                 style = MaterialTheme.typography.headlineSmall,
@@ -61,7 +52,6 @@ fun LetterFlowScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // Ohjeteksti käyttäjälle
             Text(
                 text = "Kirjoita kirjeesi tähän ja lähetä se Korvatunturille.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -70,7 +60,7 @@ fun LetterFlowScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Kirjeen tekstikenttä
+            // Tekstikenttä valkoisella taustalla
             OutlinedTextField(
                 value = state.text,
                 onValueChange = vm::onTextChange,
@@ -93,11 +83,11 @@ fun LetterFlowScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // Lähetyspainike
+            // Lähetä -> aloita lähetys ja siirry karttaan
             Button(
                 onClick = {
                     vm.sendLetter()
-                    onNavigate(RootRoute.LetterMap.route) // Navigate to map when sending
+                    onNavigate(RootRoute.LetterMap.route)
                 },
                 enabled = state.text.trim().isNotEmpty() && !state.isSending,
                 modifier = Modifier.fillMaxWidth()
@@ -105,7 +95,7 @@ fun LetterFlowScreen(
                 Text(if (state.isSending) "Lähetetään..." else "Lähetä")
             }
 
-            // Virheilmoitus jos lähetys epäonnistuu
+            // Virheilmoitus (esim. backend ei käytössä)
             state.error?.let { msg ->
                 Spacer(Modifier.height(10.dp))
                 ErrorView(
@@ -116,38 +106,27 @@ fun LetterFlowScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Näytetään sisältö kirjeen tilan mukaan
+            // (Tämä voi näkyä hetken ennen navigointia, tai jos palaat takaisin)
             when (state.status) {
+                "replying" -> Text(
+                    text = "Pukki miettii vastausta... 🎅",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = StorybookPaper
+                )
 
-                // Pukki miettii vastausta
-                "replying" -> {
-                    Text(
-                        text = "Pukki miettii vastausta... 🎅",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = StorybookPaper
-                    )
-                }
-
-                // Vastaus on saatu
                 "replied" -> {
                     Text(
                         text = "Pukin vastaus:",
                         style = MaterialTheme.typography.titleMedium,
                         color = StorybookPaper
                     )
-
                     Spacer(Modifier.height(6.dp))
-
-                    // Pukin vastausteksti
                     Text(
                         text = state.replyText.orEmpty(),
                         style = MaterialTheme.typography.bodyLarge,
                         color = StorybookPaper
                     )
-
                     Spacer(Modifier.height(16.dp))
-
-                    // Siirtyminen kameran AR-etsintään
                     Button(
                         onClick = { onNavigate(LetterRoutes.CAMERA) },
                         modifier = Modifier.fillMaxWidth()
@@ -156,8 +135,6 @@ fun LetterFlowScreen(
                     }
                 }
 
-                // Ei vielä tilaa
-                null -> Unit
                 else -> Unit
             }
         }

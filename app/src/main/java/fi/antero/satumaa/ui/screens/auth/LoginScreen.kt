@@ -1,6 +1,8 @@
 package fi.antero.satumaa.ui.screens.auth
 
+import android.Manifest
 import android.app.Activity
+import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,20 +36,36 @@ fun LoginScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
-    // Paikallinen tila Google-kirjautumisen Intent-virheille
+    // Google-login virheviesti UI:lle
     var googleError by remember { mutableStateOf<String?>(null) }
 
+    // Android 13+ ilmoituslupa (näitä tarvitaan virallisiin notifikaatioihin)
+    val notifPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        Log.d("AUTH", "Notification permission granted=$granted")
+    }
+
+    // Pyydetään lupa kerran kun ruutu avautuu (vain Android 13+)
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 33) {
+            notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // Google client id
     val googleClientId = context.getString(R.string.default_web_client_id)
 
+    // Google sign-in client
     val googleSignInClient = remember {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(googleClientId)
             .requestEmail()
             .build()
-
         GoogleSignIn.getClient(context, gso)
     }
 
+    // Google sign-in result launcher
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -63,20 +81,20 @@ fun LoginScreen(
                     Log.d("AUTH", "Google account ok, token found.")
                     viewModel.signInWithGoogle(idToken)
                 } else {
-                    Log.e("AUTH", "Kirjautuminen epäonnistui: idToken puuttuu.")
+                    Log.e("AUTH", "Google Sign-In: idToken puuttuu.")
                     googleError = "Google-kirjautuminen epäonnistui (tunniste puuttuu)."
                 }
 
             } catch (e: ApiException) {
-                val msg = "Google Sign-In epäonnistui (koodi ${e.statusCode})."
-                Log.e("AUTH", msg, e)
+                Log.e("AUTH", "Google Sign-In epäonnistui (koodi ${e.statusCode}).", e)
                 googleError = "Google-kirjautuminen epäonnistui. Yritä uudelleen."
             }
         } else {
-            Log.d("AUTH", "Google Sign-In peruutettu tai epäonnistui (resultCode=${result.resultCode})")
+            Log.d("AUTH", "Google Sign-In peruutettu/epäonnistui (resultCode=${result.resultCode})")
         }
     }
 
+    // Kun Firebase-auth onnistuu, siirrytään eteenpäin
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
             Log.d("AUTH", "AuthUiState.Success -> navigate")
@@ -114,23 +132,26 @@ fun LoginScreen(
                     .weight(2f),
                 contentAlignment = Alignment.Center
             ) {
-                // KORJAUS: Otetaan tila lokaaliin muuttujaan, jotta Smart Cast toimii
+                // lokaali muuttuja -> smart cast helpommin
                 val state = uiState
 
                 when (state) {
                     is AuthUiState.Loading -> LoadingView()
+
                     is AuthUiState.Error -> {
                         ErrorView(
-                            message = state.message, // Nyt toimii ilman (uiState as ...) pakotusta
+                            message = state.message,
                             onRetry = {
                                 googleError = null
                                 viewModel.resetState()
                             }
                         )
                     }
+
                     else -> {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
+                            // Näytetään mahdollinen googleError omana laatikkona
                             googleError?.let { msg ->
                                 ErrorView(
                                     message = msg,
@@ -153,6 +174,7 @@ fun LoginScreen(
                     }
                 }
             }
+
             Spacer(modifier = Modifier.height(48.dp))
         }
     }
