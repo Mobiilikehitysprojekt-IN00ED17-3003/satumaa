@@ -1,5 +1,7 @@
 package fi.antero.satumaa.ui.navigation
 
+
+
 sealed class RootRoute(val route: String) {
     data object Login : RootRoute("login")
     data object Onboarding : RootRoute("onboarding")

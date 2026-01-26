@@ -3,15 +3,17 @@ package fi.antero.satumaa.ui
 import androidx.compose.runtime.*
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import fi.antero.satumaa.ui.navigation.LetterRoutes
 import fi.antero.satumaa.ui.navigation.RootRoute
 import fi.antero.satumaa.ui.screens.auth.LoginScreen
-import fi.antero.satumaa.ui.screens.menu.MenuScreen
-import fi.antero.satumaa.ui.screens.story.StoryScreen
-import fi.antero.satumaa.ui.screens.story.StoryListScreen
+import fi.antero.satumaa.ui.screens.letter.LetterCameraScreen
 import fi.antero.satumaa.ui.screens.letter.LetterFlowScreen
 import fi.antero.satumaa.ui.screens.letter.LetterMapScreen
-import fi.antero.satumaa.ui.screens.profile.ProfileScreen
+import fi.antero.satumaa.ui.screens.menu.MenuScreen
 import fi.antero.satumaa.ui.screens.onboarding.OnboardingScreen
+import fi.antero.satumaa.ui.screens.profile.ProfileScreen
+import fi.antero.satumaa.ui.screens.story.StoryListScreen
+import fi.antero.satumaa.ui.screens.story.StoryScreen
 
 @Composable
 fun SatumaaApp() {
@@ -82,10 +84,23 @@ fun SatumaaApp() {
             )
         }
 
+        // Kirje (pääsivu)
         composable(RootRoute.Letter.route) {
-            LetterFlowScreen(currentRoute, navigate)
+            LetterFlowScreen(
+                currentRoute = currentRoute,
+                onNavigate = navigate
+            )
         }
 
+        // Kirjeen kamera/AR
+        composable(LetterRoutes.CAMERA) {
+            LetterCameraScreen(
+                onFoundLetter = { navController.popBackStack() },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // UUSI: Kirjeen kartta (osmdroid)
         composable(RootRoute.LetterMap.route) {
             LetterMapScreen(onBack = { navController.popBackStack() })
         }
