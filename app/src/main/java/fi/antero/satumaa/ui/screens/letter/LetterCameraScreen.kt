@@ -21,25 +21,29 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import fi.antero.satumaa.ui.components.letter.camera.CameraOverlay
 import fi.antero.satumaa.ui.components.letter.camera.LetterOpenAnimation
+import fi.antero.satumaa.ui.components.letter.camera.rememberHeadingDegrees
 import kotlinx.coroutines.delay
+import kotlin.math.abs
+import kotlin.random.Random
 
-// Kameranäkymä, jossa käyttäjä etsii pukin vastausta AR-tyylisesti
+// Kameranäkymä, jossa käyttäjä etsii pukin vastausta AR-tyylisesti (vaihtoehto 2 + kuuma–kylmä)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LetterCameraScreen(
-    onFoundLetter: () -> Unit, // Kutsutaan kun kirje on löydetty
+    onFoundLetter: () -> Unit, // Kutsutaan kun kirje on löydetty ja avattu
     onBack: () -> Unit         // Paluu edelliseen näkymään
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    // Luetaan puhelimen katsesuunta (yaw/heading)
+    val headingDeg by rememberHeadingDegrees()
+
     // Tarkistetaan onko kameraoikeus jo annettu
     var hasCameraPermission by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                    PackageManager.PERMISSION_GRANTED
         )
     }
 
@@ -50,10 +54,15 @@ fun LetterCameraScreen(
         hasCameraPermission = granted
     }
 
-    // Etsintään liittyvät tilat
-    var scanProgress by remember { mutableFloatStateOf(0f) } // 0–100 %
-    var showLetter by remember { mutableStateOf(false) }     // Näytetäänkö kirje
-    var opening by remember { mutableStateOf(false) }        // Avataanko kirje
+    // Kirjeen etsimiseen liittyvät tilat
+    var opening by remember { mutableStateOf(false) }            // Näytetäänkö avausanimaatio
+    var targetHeading by remember { mutableStateOf<Float?>(null) } // Kirjeen "piilosuunta" asteina
+    var toleranceDeg by remember { mutableFloatStateOf(12f) }    // Kuinka tarkasti pitää osua suuntaan (vaikea)
+    var startedAtMs by remember { mutableLongStateOf(0L) }       // Milloin etsintä alkoi (anti-stuck)
+
+    // Kirjeen peruspaikka ruudulla (ei aina keskellä)
+    var baseOffsetXPx by remember { mutableIntStateOf(0) }
+    var baseOffsetYPx by remember { mutableIntStateOf(0) }
 
     // Pyydetään kameraoikeus heti näkymän avautuessa
     LaunchedEffect(Unit) {
@@ -62,30 +71,63 @@ fun LetterCameraScreen(
         }
     }
 
-    // Simuloitu "etsintä": progress kasvaa ja lopuksi kirje ilmestyy
+    // Kun kamera on käytössä, alustetaan etsintä (arvotaan targetHeading + kirjeen ruutusijainti)
     LaunchedEffect(hasCameraPermission) {
-        if (hasCameraPermission) {
-            scanProgress = 0f
-            showLetter = false
-            opening = false
+        if (!hasCameraPermission) return@LaunchedEffect
 
-            // Progress kestää noin 4 sekuntia
-            val steps = 40
-            repeat(steps) {
-                delay(100)
-                scanProgress = ((it + 1) / steps.toFloat()).coerceIn(0f, 1f)
+        // Asetetaan aloitusaika (anti-stuck)
+        startedAtMs = System.currentTimeMillis()
+
+        // Palautetaan vaikeus lähtöarvoon
+        toleranceDeg = 12f
+
+        // Arvotaan kirjeen suunta niin, että se voi olla myös "selän takana"
+        // (offset 100..260 astetta tarkoittaa usein selän/sivun suuntaa)
+        val offset = Random.nextInt(100, 261).toFloat()
+        targetHeading = normalize360(headingDeg + offset)
+
+        // Arvotaan kirjeen perusruutusijainti (px) jotta se ei ole aina keskellä
+        baseOffsetXPx = Random.nextInt(-140, 141)
+        baseOffsetYPx = Random.nextInt(-120, 81)
+    }
+
+    // Anti-stuck: jos käyttäjä ei löydä pitkään aikaan, helpotetaan vähän (ei vihjetekstejä)
+    LaunchedEffect(hasCameraPermission, targetHeading) {
+        if (!hasCameraPermission || targetHeading == null) return@LaunchedEffect
+
+        while (true) {
+            delay(500)
+
+            // Jos avaus menossa, ei säädetä vaikeutta
+            if (opening) continue
+
+            val elapsed = System.currentTimeMillis() - startedAtMs
+
+            // Helpotetaan asteittain 15s ja 25s kohdalla (mutta ei tehdä tästä "liian helppoa")
+            toleranceDeg = when {
+                elapsed > 25_000 -> 24f
+                elapsed > 15_000 -> 18f
+                else -> 12f
             }
-
-            // Kun etsintä valmis, näytetään kirje
-            showLetter = true
         }
     }
 
-    // Ohjeteksti käyttäjälle
-    val hintText = when {
-        !showLetter -> "Liikuta puhelinta ja etsi kirjettä…"
-        else -> "Kirje löytyi! Napauta sitä."
+    // Lasketaan kuuma–kylmä (0..1) ja löytyminen kulmaeron perusteella
+    val angleDiff = remember(headingDeg, targetHeading, toleranceDeg) {
+        val t = targetHeading ?: return@remember 180f
+        shortestAngleDiffDeg(headingDeg, t) // 0..180
     }
+
+    // Hotness: 0 = kylmä (180° väärässä), 1 = kuuma (0° oikein)
+    val hotness = remember(angleDiff) {
+        (1f - (angleDiff / 180f)).coerceIn(0f, 1f)
+    }
+
+    // Kirje näkyy vasta kun suunta on tarpeeksi lähellä (tämä tekee "etsimisfiiliksen")
+    val showLetter = (targetHeading != null) && (angleDiff <= toleranceDeg) && !opening
+
+    // Ohjeteksti (ei anneta suuntavihjettä)
+    val hintText = if (!showLetter) "Etsi kirjettä kameralla…" else "Kirje löytyi! Napauta sitä."
 
     Scaffold(
         topBar = {
@@ -97,15 +139,13 @@ fun LetterCameraScreen(
             )
         }
     ) { padding ->
-
         Box(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
         ) {
             if (hasCameraPermission) {
-
-                // Kameran esikatselu
+                // Kameran esikatselu (CameraX)
                 CameraPreview(
                     modifier = Modifier.fillMaxSize(),
                     onBind = { previewView ->
@@ -120,32 +160,38 @@ fun LetterCameraScreen(
                 // Overlay kameran päällä (ohje + leijuva kirje)
                 CameraOverlay(
                     hintText = hintText,
-                    showLetter = showLetter,
+                    hotness = hotness,                   // kuuma–kylmä arvo 0..1
+                    showLetter = showLetter,             // kirje näkyy vasta "kuumana"
+                    baseOffsetXPx = baseOffsetXPx,       // kirjeen perusruutusijainti
+                    baseOffsetYPx = baseOffsetYPx,
                     onLetterTap = {
-                        showLetter = false
+                        // Kun kirjettä napautetaan, aloitetaan avaus
                         opening = true
                     },
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Näytetään progressbar vain etsinnän aikana
-                if (!showLetter && !opening) {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 70.dp)
+                // Kuuma–kylmä palkki näkyy heti etsinnän alusta (koko ajan)
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 74.dp) // overlayn yläpuolelle
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        LinearProgressIndicator(
-                            progress = { scanProgress },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = "${(scanProgress * 100).toInt()}% skannattu",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Text("Kylmä", style = MaterialTheme.typography.bodyMedium)
+                        Text("Kuuma", style = MaterialTheme.typography.bodyMedium)
                     }
+
+                    Spacer(Modifier.height(6.dp))
+
+                    LinearProgressIndicator(
+                        progress = { hotness },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
 
                 // Kirjeen avautumisanimaatio
@@ -219,4 +265,17 @@ private fun bindCameraPreview(
             // Virhe kameran käynnistyksessä (ei kaadeta sovellusta)
         }
     }, ContextCompat.getMainExecutor(context))
+}
+
+// Laskee pienimmän kulmaeron 0..180 kahden headingin välillä
+private fun shortestAngleDiffDeg(a: Float, b: Float): Float {
+    val diff = abs(a - b) % 360f
+    return if (diff > 180f) 360f - diff else diff
+}
+
+// Normalisoi asteet 0..360
+private fun normalize360(deg: Float): Float {
+    var d = deg % 360f
+    if (d < 0f) d += 360f
+    return d
 }

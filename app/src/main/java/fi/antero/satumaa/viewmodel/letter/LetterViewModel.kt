@@ -23,35 +23,40 @@ class LetterViewModel @Inject constructor(
     val uiState: StateFlow<LetterUiState> = _uiState
 
     init {
-        // Kuunnellaan listaa automaattisesti
+        // Kuunnellaan kirjelistaa automaattisesti tietokannasta
         repo.getLetters()
             .onEach { letters ->
                 val latestLetter = letters.firstOrNull()
 
-
+                // Päivitetään UI uusimmalla kirjeellä vain, jos ei olla katselutilassa (isViewMode)
                 if (latestLetter != null && !_uiState.value.isViewMode) {
 
+                    // Päätetään, pitääkö UI päivittää (jos vastaus on kesken tai juuri saapunut)
                     val shouldUpdate = if (latestLetter.status == "replying") {
-                        true // Aina näytetään, jos vastaus on kesken
+                        true
                     } else if (latestLetter.status == "replied") {
-                        // Näytetään valmis kirje vain, jos käyttäjä oli juuri odottamassa sitä
+                        // Näytetään vastaus, jos käyttäjä oli juuri odottamassa sitä
                         _uiState.value.status == "replying"
                     } else {
                         false
                     }
 
                     if (shouldUpdate) {
+                        // Tarkistetaan pitääkö näyttää "Vastaus saapui" -ilmoitus
+                        val shouldNotify = (_uiState.value.status != "replied" && latestLetter.status == "replied")
+
                         _uiState.update { state ->
                             state.copy(
                                 status = latestLetter.status,
                                 replyText = latestLetter.replyText,
                                 sentText = latestLetter.letterText,
-                                error = null
+                                error = null,
+                                showReplyArrived = shouldNotify
                             )
                         }
                     }
 
-                    // Käynnistetään pollaus vain jos vastausta odotetaan
+                    // Käynnistetään tietojen haku pilvestä (pollaus), jos vastausta odotetaan
                     if (latestLetter.status == "replying") {
                         delay(4000)
                         repo.refreshLetters()
@@ -63,6 +68,7 @@ class LetterViewModel @Inject constructor(
         refresh()
     }
 
+    // Lataa tietyn kirjeen historiasta katselutilaan
     fun loadLetter(id: String) {
         viewModelScope.launch {
             val letter = repo.getLetterById(id)
@@ -75,13 +81,14 @@ class LetterViewModel @Inject constructor(
                         replyText = letter.replyText,
                         isSending = false,
                         error = null,
-                        isViewMode = true // Estää automaattipäivitykset
+                        isViewMode = true // Estää automaattipäivitykset uusimpaan
                     )
                 }
             }
         }
     }
 
+    // Nollaa tilan uuden kirjeen kirjoittamista varten
     fun resetToNewLetter() {
         _uiState.update {
             LetterUiState(
@@ -105,8 +112,16 @@ class LetterViewModel @Inject constructor(
             return
         }
 
+        // Päivitetään UI lähetyksen ajaksi
         _uiState.update {
-            it.copy(isSending = true, status = "replying", error = null, replyText = null, isViewMode = false)
+            it.copy(
+                isSending = true,
+                status = "replying",
+                error = null,
+                replyText = null,
+                isViewMode = false,
+                showReplyArrived = false
+            )
         }
 
         viewModelScope.launch {
@@ -115,6 +130,7 @@ class LetterViewModel @Inject constructor(
                 _uiState.update { it.copy(text = "", isSending = false, usedOfflineDemo = false) }
                 repo.refreshLetters()
             }.onFailure { e ->
+                // Jos verkkolähetys epäonnistuu, siirrytään offline-demoon
                 startOfflineDemoReply(e.toUserFriendlyMessage())
             }
         }
@@ -122,6 +138,11 @@ class LetterViewModel @Inject constructor(
 
     private fun refresh() {
         viewModelScope.launch { repo.refreshLetters() }
+    }
+
+    // UI kutsuu tätä kuitatakseen "Vastaus saapui" -ilmoituksen luetuksi
+    fun consumeReplyArrived() {
+        _uiState.update { it.copy(showReplyArrived = false) }
     }
 
     fun simulateReply() {
@@ -134,7 +155,8 @@ class LetterViewModel @Inject constructor(
                 isSending = false,
                 status = "replying",
                 usedOfflineDemo = true,
-                error = originalError
+                error = originalError,
+                showReplyArrived = false
             )
         }
         viewModelScope.launch {
@@ -143,7 +165,8 @@ class LetterViewModel @Inject constructor(
                 state.copy(
                     status = "replied",
                     replyText = "Ho ho ho! Kiitos kirjeestäsi 🎅🎁\nTerveisin, Joulupukki (Offline-tila)",
-                    error = null
+                    error = null,
+                    showReplyArrived = true
                 )
             }
         }

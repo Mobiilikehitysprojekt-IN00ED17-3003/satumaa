@@ -35,20 +35,19 @@ fun LetterFlowScreen(
     val state by vm.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
-    // --- KORJATTU LOGIIKKA ---
+    // --- KORJATTU LOGIIKKA: Nollaus ja lataus ---
     LaunchedEffect(letterId) {
         if (letterId != null) {
             // Jos ID on annettu, ladataan vanha kirje (tullaan listasta)
             vm.loadLetter(letterId)
         } else {
             // Jos ID on null (tullaan valikosta TAI palataan kartalta):
-
             // Tarkistetaan, onko meillä "aktiivinen prosessi" käynnissä.
             // Aktiivinen = Odotetaan vastausta (replying) TAI vastaus tuli juuri (replied + ei olla katselutilassa).
             val isActiveProcess = state.status == "replying" || (state.status == "replied" && !state.isViewMode)
 
             // Nollataan näkymä vain, jos EI olla aktiivisessa prosessissa.
-            // Tämä estää nollauksen, kun palataan kartalta (koska silloin status on 'replying' tai 'replied').
+            // Tämä estää nollauksen, kun palataan kartalta.
             if (!isActiveProcess) {
                 vm.resetToNewLetter()
             }
@@ -254,7 +253,7 @@ fun LetterFlowScreen(
                     )
                 }
 
-                // "KIRJOITA UUSI KIRJE" -PAINIKE (Näkyy aina vastauksen alla)
+                // "KIRJOITA UUSI KIRJE" -PAINIKE
                 Spacer(Modifier.height(24.dp))
                 OutlinedButton(
                     onClick = {
