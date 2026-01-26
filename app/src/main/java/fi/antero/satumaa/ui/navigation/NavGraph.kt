@@ -11,7 +11,8 @@ import fi.antero.satumaa.ui.screens.letter.LetterFlowScreen
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
-    startDestination: String = RootRoute.Letter.route
+    startDestination: String = RootRoute.Letter.route,
+    userName: String = "Seikkailija"
 ) {
     val backStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry.value?.destination?.route
@@ -27,7 +28,8 @@ fun AppNavGraph(
                 currentRoute = currentRoute,
                 onNavigate = { route ->
                     navController.navigate(route)
-                }
+                },
+                userName = userName
             )
         }
 
@@ -43,5 +45,10 @@ fun AppNavGraph(
                 }
             )
         }
+
+        // Huom: Jos käytät tätä tiedostoa, muista lisätä myös uusi LetterMapScreen tänne!
+        // composable(RootRoute.LetterMap.route) {
+        //     LetterMapScreen(onBack = { navController.popBackStack() })
+        // }
     }
 }

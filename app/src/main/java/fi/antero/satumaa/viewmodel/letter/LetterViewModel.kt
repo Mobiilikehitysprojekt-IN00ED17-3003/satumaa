@@ -2,32 +2,103 @@ package fi.antero.satumaa.viewmodel.letter
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
+import dagger.hilt.android.lifecycle.HiltViewModel
 import fi.antero.satumaa.data.repository.LetterRepository
-import fi.antero.satumaa.data.repository.LetterRepositoryImpl
+import fi.antero.satumaa.util.toUserFriendlyMessage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-
-class LetterViewModel(
-    private val repo: LetterRepository = LetterRepositoryImpl(),
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+@HiltViewModel
+class LetterViewModel @Inject constructor(
+    private val repo: LetterRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LetterUiState())
     val uiState: StateFlow<LetterUiState> = _uiState
 
-    private var listener: ListenerRegistration? = null
+    init {
+        // Kuunnellaan listaa automaattisesti
+        repo.getLetters()
+            .onEach { letters ->
+                val latestLetter = letters.firstOrNull()
+
+
+                if (latestLetter != null && !_uiState.value.isViewMode) {
+
+                    val shouldUpdate = if (latestLetter.status == "replying") {
+                        true // Aina näytetään, jos vastaus on kesken
+                    } else if (latestLetter.status == "replied") {
+                        // Näytetään valmis kirje vain, jos käyttäjä oli juuri odottamassa sitä
+                        _uiState.value.status == "replying"
+                    } else {
+                        false
+                    }
+
+                    if (shouldUpdate) {
+                        _uiState.update { state ->
+                            state.copy(
+                                status = latestLetter.status,
+                                replyText = latestLetter.replyText,
+                                sentText = latestLetter.letterText,
+                                error = null
+                            )
+                        }
+                    }
+
+                    // Käynnistetään pollaus vain jos vastausta odotetaan
+                    if (latestLetter.status == "replying") {
+                        delay(4000)
+                        repo.refreshLetters()
+                    }
+                }
+            }
+            .launchIn(viewModelScope)
+
+        refresh()
+    }
+
+    fun loadLetter(id: String) {
+        viewModelScope.launch {
+            val letter = repo.getLetterById(id)
+            if (letter != null) {
+                _uiState.update {
+                    it.copy(
+                        status = letter.status,
+                        text = "",
+                        sentText = letter.letterText,
+                        replyText = letter.replyText,
+                        isSending = false,
+                        error = null,
+                        isViewMode = true // Estää automaattipäivitykset
+                    )
+                }
+            }
+        }
+    }
+
+    fun resetToNewLetter() {
+        _uiState.update {
+            LetterUiState(
+                isViewMode = false,
+                status = null,
+                text = "",
+                sentText = "",
+                replyText = null
+            )
+        }
+    }
 
     fun onTextChange(text: String) {
         _uiState.update { it.copy(text = text, error = null) }
     }
 
-    fun sendLetter() {
+    fun sendLetter(childName: String) {
         val content = uiState.value.text.trim()
         if (content.isEmpty()) {
             _uiState.update { it.copy(error = "Kirjoita kirje ennen lähettämistä") }
@@ -35,29 +106,29 @@ class LetterViewModel(
         }
 
         _uiState.update {
-            it.copy(isSending = true, status = "replying", error = null, replyText = null)
+            it.copy(isSending = true, status = "replying", error = null, replyText = null, isViewMode = false)
         }
 
-        repo.sendLetter(content)
-            .addOnSuccessListener { doc ->
+        viewModelScope.launch {
+            val result = repo.sendLetter(content, childName)
+            result.onSuccess {
                 _uiState.update { it.copy(text = "", isSending = false, usedOfflineDemo = false) }
-                listenToLetter(doc.id)
+                repo.refreshLetters()
+            }.onFailure { e ->
+                startOfflineDemoReply(e.toUserFriendlyMessage())
             }
-            .addOnFailureListener { e ->
-                startOfflineDemoReply(
-                    originalError = e.message ?: "Backend ei käytössä / oikeudet puuttuvat"
-                )
-            }
+        }
+    }
+
+    private fun refresh() {
+        viewModelScope.launch { repo.refreshLetters() }
     }
 
     fun simulateReply() {
-        startOfflineDemoReply(originalError = null)
+        startOfflineDemoReply(null)
     }
 
     private fun startOfflineDemoReply(originalError: String?) {
-        listener?.remove()
-        listener = null
-
         _uiState.update {
             it.copy(
                 isSending = false,
@@ -66,38 +137,15 @@ class LetterViewModel(
                 error = originalError
             )
         }
-
         viewModelScope.launch {
-            delay(1200)
+            delay(2000)
             _uiState.update { state ->
                 state.copy(
                     status = "replied",
-                    replyText = "Ho ho ho! Kiitos kirjeestäsi 🎅🎁\nTerveisin, Joulupukki",
+                    replyText = "Ho ho ho! Kiitos kirjeestäsi 🎅🎁\nTerveisin, Joulupukki (Offline-tila)",
                     error = null
                 )
             }
         }
-    }
-
-    private fun listenToLetter(id: String) {
-        listener?.remove()
-        listener = db.collection("letters")
-            .document(id)
-            .addSnapshotListener { snap, err ->
-                if (err != null || snap == null) return@addSnapshotListener
-
-                _uiState.update {
-                    it.copy(
-                        status = snap.getString("status"),
-                        replyText = snap.getString("replyText"),
-                        error = null
-                    )
-                }
-            }
-    }
-
-    override fun onCleared() {
-        listener?.remove()
-        super.onCleared()
     }
 }

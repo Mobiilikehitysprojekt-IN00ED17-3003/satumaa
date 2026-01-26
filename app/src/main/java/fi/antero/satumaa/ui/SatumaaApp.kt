@@ -8,6 +8,7 @@ import fi.antero.satumaa.ui.navigation.RootRoute
 import fi.antero.satumaa.ui.screens.auth.LoginScreen
 import fi.antero.satumaa.ui.screens.letter.LetterCameraScreen
 import fi.antero.satumaa.ui.screens.letter.LetterFlowScreen
+import fi.antero.satumaa.ui.screens.letter.LetterListScreen
 import fi.antero.satumaa.ui.screens.letter.LetterMapScreen
 import fi.antero.satumaa.ui.screens.menu.MenuScreen
 import fi.antero.satumaa.ui.screens.onboarding.OnboardingScreen
@@ -84,15 +85,32 @@ fun SatumaaApp() {
             )
         }
 
-        // Kirje (pääsivu)
-        composable(RootRoute.Letter.route) {
+        // --- KIRJEET ---
+
+        // 1. Kirjeen kirjoitus ja katselu (tukee nyt letterId:tä)
+        composable(
+            route = RootRoute.Letter.route + "?letterId={letterId}",
+            arguments = listOf(navArgument("letterId") { nullable = true })
+        ) { entry ->
+            val letterId = entry.arguments?.getString("letterId")
             LetterFlowScreen(
                 currentRoute = currentRoute,
-                onNavigate = navigate
+                onNavigate = navigate,
+                userName = adventurerName,
+                letterId = letterId
             )
         }
 
-        // Kirjeen kamera/AR
+        // 2. Vanhat kirjeet (Lista)
+        composable(RootRoute.LetterList.route) {
+            LetterListScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onLetterClick = { letterId ->
+                    navController.navigate(RootRoute.Letter.route + "?letterId=$letterId")
+                }
+            )
+        }
+
         composable(LetterRoutes.CAMERA) {
             LetterCameraScreen(
                 onFoundLetter = { navController.popBackStack() },
@@ -100,7 +118,6 @@ fun SatumaaApp() {
             )
         }
 
-        // UUSI: Kirjeen kartta (osmdroid)
         composable(RootRoute.LetterMap.route) {
             LetterMapScreen(onBack = { navController.popBackStack() })
         }
