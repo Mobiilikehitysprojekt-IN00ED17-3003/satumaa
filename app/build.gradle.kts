@@ -59,7 +59,7 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
 
-    
+
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
 
@@ -98,6 +98,8 @@ dependencies {
 
     implementation("com.google.firebase:firebase-appcheck-playintegrity")
     debugImplementation("com.google.firebase:firebase-appcheck-debug")
+
+    implementation(libs.osmdroid.android)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

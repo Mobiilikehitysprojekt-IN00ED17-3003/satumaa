@@ -1,4 +1,4 @@
-package fi.antero.satumaa.viewmodel
+package fi.antero.satumaa.viewmodel.letter
 
 import androidx.lifecycle.ViewModel
 import com.google.firebase.firestore.FirebaseFirestore
@@ -9,13 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 
-data class LetterUiState(
-    val text: String = "",
-    val isSending: Boolean = false,
-    val status: String? = null, // replying | replied | error
-    val replyText: String? = null,
-    val error: String? = null
-)
+
 
 class LetterViewModel(
     private val repo: LetterRepository = LetterRepositoryImpl(),

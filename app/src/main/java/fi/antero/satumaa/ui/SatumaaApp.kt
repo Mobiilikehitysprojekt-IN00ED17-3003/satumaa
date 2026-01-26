@@ -9,6 +9,7 @@ import fi.antero.satumaa.ui.screens.menu.MenuScreen
 import fi.antero.satumaa.ui.screens.story.StoryScreen
 import fi.antero.satumaa.ui.screens.story.StoryListScreen
 import fi.antero.satumaa.ui.screens.letter.LetterFlowScreen
+import fi.antero.satumaa.ui.screens.letter.LetterMapScreen
 import fi.antero.satumaa.ui.screens.profile.ProfileScreen
 import fi.antero.satumaa.ui.screens.onboarding.OnboardingScreen
 
@@ -83,6 +84,10 @@ fun SatumaaApp() {
 
         composable(RootRoute.Letter.route) {
             LetterFlowScreen(currentRoute, navigate)
+        }
+
+        composable(RootRoute.LetterMap.route) {
+            LetterMapScreen(onBack = { navController.popBackStack() })
         }
 
         composable(RootRoute.Profile.route) {
