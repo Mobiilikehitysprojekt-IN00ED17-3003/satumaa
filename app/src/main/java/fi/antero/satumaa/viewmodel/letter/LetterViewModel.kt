@@ -2,89 +2,154 @@ package fi.antero.satumaa.viewmodel.letter
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
+import dagger.hilt.android.lifecycle.HiltViewModel
 import fi.antero.satumaa.data.repository.LetterRepository
-import fi.antero.satumaa.data.repository.LetterRepositoryImpl
+import fi.antero.satumaa.util.toUserFriendlyMessage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-
-class LetterViewModel(
-    private val repo: LetterRepository = LetterRepositoryImpl(),
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+@HiltViewModel
+class LetterViewModel @Inject constructor(
+    private val repo: LetterRepository
 ) : ViewModel() {
-
 
     private val _uiState = MutableStateFlow(LetterUiState())
     val uiState: StateFlow<LetterUiState> = _uiState
 
-    // Firestore-kuuntelija
-    private var listener: ListenerRegistration? = null
+    init {
+        // Kuunnellaan kirjelistaa automaattisesti tietokannasta
+        repo.getLetters()
+            .onEach { letters ->
+                val latestLetter = letters.firstOrNull()
 
+                // Päivitetään UI uusimmalla kirjeellä vain, jos ei olla katselutilassa (isViewMode)
+                if (latestLetter != null && !_uiState.value.isViewMode) {
+
+                    // Päätetään, pitääkö UI päivittää (jos vastaus on kesken tai juuri saapunut)
+                    val shouldUpdate = if (latestLetter.status == "replying") {
+                        true
+                    } else if (latestLetter.status == "replied") {
+                        // Näytetään vastaus, jos käyttäjä oli juuri odottamassa sitä
+                        _uiState.value.status == "replying"
+                    } else {
+                        false
+                    }
+
+                    if (shouldUpdate) {
+                        // Tarkistetaan pitääkö näyttää "Vastaus saapui" -ilmoitus
+                        val shouldNotify = (_uiState.value.status != "replied" && latestLetter.status == "replied")
+
+                        _uiState.update { state ->
+                            state.copy(
+                                status = latestLetter.status,
+                                replyText = latestLetter.replyText,
+                                sentText = latestLetter.letterText,
+                                error = null,
+                                showReplyArrived = shouldNotify
+                            )
+                        }
+                    }
+
+                    // Käynnistetään tietojen haku pilvestä (pollaus), jos vastausta odotetaan
+                    if (latestLetter.status == "replying") {
+                        delay(4000)
+                        repo.refreshLetters()
+                    }
+                }
+            }
+            .launchIn(viewModelScope)
+
+        refresh()
+    }
+
+    // Lataa tietyn kirjeen historiasta katselutilaan
+    fun loadLetter(id: String) {
+        viewModelScope.launch {
+            val letter = repo.getLetterById(id)
+            if (letter != null) {
+                _uiState.update {
+                    it.copy(
+                        status = letter.status,
+                        text = "",
+                        sentText = letter.letterText,
+                        replyText = letter.replyText,
+                        isSending = false,
+                        error = null,
+                        isViewMode = true // Estää automaattipäivitykset uusimpaan
+                    )
+                }
+            }
+        }
+    }
+
+    // Nollaa tilan uuden kirjeen kirjoittamista varten
+    fun resetToNewLetter() {
+        _uiState.update {
+            LetterUiState(
+                isViewMode = false,
+                status = null,
+                text = "",
+                sentText = "",
+                replyText = null
+            )
+        }
+    }
 
     fun onTextChange(text: String) {
         _uiState.update { it.copy(text = text, error = null) }
     }
 
-
-    // kenttään on pakkko kirjoittaa jotain ennen lähetystä, muuten - error
-    fun sendLetter() {
+    fun sendLetter(childName: String) {
         val content = uiState.value.text.trim()
         if (content.isEmpty()) {
             _uiState.update { it.copy(error = "Kirjoita kirje ennen lähettämistä") }
             return
         }
 
-        // lähetys -> UI: "lähetetään" ja status "replying"
+        // Päivitetään UI lähetyksen ajaksi
         _uiState.update {
             it.copy(
                 isSending = true,
                 status = "replying",
                 error = null,
                 replyText = null,
-                showReplyArrived = false // nollataan ilmoitus joka lähetystä kohti
+                isViewMode = false,
+                showReplyArrived = false
             )
         }
 
-        // Firestore yhdistys
-        repo.sendLetter(content)
-            .addOnSuccessListener { doc ->
-                // Kun kirje on tallennettu, tyhjennetään tekstikenttä ja lopetetaan spinner
-                _uiState.update {
-                    it.copy(
-                        text = "",
-                        isSending = false,
-                        usedOfflineDemo = false
-                    )
-                }
-                // vastauksen kuuntelu
-                listenToLetter(doc.id)
+        viewModelScope.launch {
+            val result = repo.sendLetter(content, childName)
+            result.onSuccess {
+                _uiState.update { it.copy(text = "", isSending = false, usedOfflineDemo = false) }
+                repo.refreshLetters()
+            }.onFailure { e ->
+                // Jos verkkolähetys epäonnistuu, siirrytään offline-demoon
+                startOfflineDemoReply(e.toUserFriendlyMessage())
             }
-            .addOnFailureListener { e ->
-                // Backend ei käytössä / oikeudet puuttuvat -> offline demo
-                startOfflineDemoReply(
-                    originalError = e.message ?: "Backend ei käytössä / oikeudet puuttuvat"
-                )
-            }
+        }
     }
 
+    private fun refresh() {
+        viewModelScope.launch { repo.refreshLetters() }
+    }
+
+    // UI kutsuu tätä kuitatakseen "Vastaus saapui" -ilmoituksen luetuksi
+    fun consumeReplyArrived() {
+        _uiState.update { it.copy(showReplyArrived = false) }
+    }
 
     fun simulateReply() {
-        startOfflineDemoReply(originalError = null)
+        startOfflineDemoReply(null)
     }
 
-
-    // offline demossa kun on kehitetty tms kätetään tätä: (voi poistaa kun valmis, tai backi toimii)
     private fun startOfflineDemoReply(originalError: String?) {
-        // Lopetetaan firestoren kuuntelu
-        listener?.remove()
-        listener = null
-
-        // UI "replying" tilaan ja näytetään mahdollinen virhe info-muodossa
         _uiState.update {
             it.copy(
                 isSending = false,
@@ -94,57 +159,16 @@ class LetterViewModel(
                 showReplyArrived = false
             )
         }
-
-        // demo AI:n miettiminen
         viewModelScope.launch {
-            delay(1200)
-
-            // tilan päivittäminen kun tulee vastaujs
+            delay(2000)
             _uiState.update { state ->
                 state.copy(
                     status = "replied",
-                    replyText = "Ho ho ho! Kiitos kirjeestäsi 🎅🎁\nTerveisin, Joulupukki",
+                    replyText = "Ho ho ho! Kiitos kirjeestäsi 🎅🎁\nTerveisin, Joulupukki (Offline-tila)",
                     error = null,
                     showReplyArrived = true
                 )
             }
         }
-    }
-
-    // firestoresta id tarkistus ja kun status vaihtuu replied tilaan -> showreply= true vain kerran
-    private fun listenToLetter(id: String) {
-        listener?.remove()
-
-        listener = db.collection("letters")
-            .document(id)
-            .addSnapshotListener { snap, err ->
-                if (err != null || snap == null) return@addSnapshotListener
-                if (!snap.exists()) return@addSnapshotListener
-
-                _uiState.update { prev ->
-                    val newStatus = snap.getString("status")
-                    val newReply = snap.getString("replyText")
-
-                    // Ilmoitus jos status vaihtuu -> replied
-                    val shouldNotify = (prev.status != "replied" && newStatus == "replied")
-
-                    prev.copy(
-                        status = newStatus,
-                        replyText = newReply,
-                        error = null,
-                        showReplyArrived = shouldNotify
-                    )
-                }
-            }
-    }
-
-    // ui kutsuu vain kerran ni ei näy ilmo uudellee
-    fun consumeReplyArrived() {
-        _uiState.update { it.copy(showReplyArrived = false) }
-    }
-
-    override fun onCleared() {
-        listener?.remove()
-        super.onCleared()
     }
 }

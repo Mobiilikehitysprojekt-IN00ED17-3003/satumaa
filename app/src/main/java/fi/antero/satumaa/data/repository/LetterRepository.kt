@@ -1,8 +1,21 @@
 package fi.antero.satumaa.data.repository
 
-import com.google.android.gms.tasks.Task
-import com.google.firebase.firestore.DocumentReference
+import fi.antero.satumaa.data.model.Letter
+import kotlinx.coroutines.flow.Flow
 
 interface LetterRepository {
-    fun sendLetter(letterText: String): Task<DocumentReference>
+    // Hakee kirjeet paikallisesta kannasta (Room) -> UI päivittyy automaattisesti
+    fun getLetters(): Flow<List<Letter>>
+
+    // UUSI: Hakee yksittäisen kirjeen (View Mode)
+    suspend fun getLetterById(id: String): Letter?
+
+    // Synkkaa kirjeet pilvestä paikalliseen kantaan
+    suspend fun refreshLetters()
+
+    // Lähettää kirjeen
+    suspend fun sendLetter(letterText: String, childName: String): Result<String>
+
+    // UUSI: Poistaa kirjeen
+    suspend fun deleteLetter(letterId: String)
 }

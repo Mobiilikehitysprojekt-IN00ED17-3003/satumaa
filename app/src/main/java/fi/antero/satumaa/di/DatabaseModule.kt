@@ -8,6 +8,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import fi.antero.satumaa.data.local.SatumaaDatabase
+import fi.antero.satumaa.data.local.dao.LetterDao
 import fi.antero.satumaa.data.local.dao.StoryDao
 import javax.inject.Singleton
 
@@ -33,5 +34,12 @@ object DatabaseModule {
     @Singleton
     fun provideStoryDao(database: SatumaaDatabase): StoryDao {
         return database.storyDao()
+    }
+
+    // UUSI: Tarjotaan LetterDao
+    @Provides
+    @Singleton
+    fun provideLetterDao(database: SatumaaDatabase): LetterDao {
+        return database.letterDao()
     }
 }
