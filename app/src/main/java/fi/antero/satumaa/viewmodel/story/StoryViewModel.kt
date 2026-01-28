@@ -40,7 +40,7 @@ class StoryViewModel @Inject constructor(
 
             _uiState.value = StoryUiState.Loading
 
-            // Repository palauttaa nyt Result-tyypin, joten try-catch ei ole välttämätön tässä
+
             val result = repository.generateStoryPreview(
                 childName = childName,
                 keywords = keywords,
