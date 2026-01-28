@@ -1,6 +1,5 @@
 package fi.antero.satumaa.ui.screens.onboarding
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -19,9 +18,7 @@ fun OnboardingScreen(
 ) {
     var name by remember { mutableStateOf("") }
 
-    AppPageLayout(
-        backgroundImageRes = LocalAppImages.current.authBackground
-    ) { padding ->
+    AppPageLayout(backgroundImageRes = LocalAppImages.current.authBackground) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -30,7 +27,6 @@ fun OnboardingScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-
             Surface(
                 color = Color.Black.copy(alpha = 0.5f),
                 shape = RoundedCornerShape(24.dp),
@@ -46,18 +42,14 @@ fun OnboardingScreen(
                         color = Color.White,
                         textAlign = TextAlign.Center
                     )
-
                     Spacer(modifier = Modifier.height(12.dp))
-
                     Text(
                         text = "Kuka tänään lähtee matkaan?",
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.White.copy(alpha = 0.9f),
                         textAlign = TextAlign.Center
                     )
-
                     Spacer(modifier = Modifier.height(24.dp))
-
                     TextField(
                         value = name,
                         onValueChange = { name = it },
@@ -76,9 +68,7 @@ fun OnboardingScreen(
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(32.dp))
-
             Button(
                 onClick = { if (name.isNotBlank()) onNameSubmitted(name) },
                 enabled = name.isNotBlank(),

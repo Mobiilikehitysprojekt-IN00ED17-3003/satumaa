@@ -17,7 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController // LISÄTTY
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -34,6 +34,7 @@ import fi.antero.satumaa.ui.components.story.StoryStyleSelector
 import fi.antero.satumaa.ui.navigation.RootRoute
 import fi.antero.satumaa.ui.theme.LocalAppImages
 import fi.antero.satumaa.ui.theme.StorybookPaper
+// Varmistetaan, että importit osoittavat oikeaan pakettiin
 import fi.antero.satumaa.ui.viewmodel.story.StoryUiState
 import fi.antero.satumaa.ui.viewmodel.story.StoryViewModel
 
@@ -47,7 +48,7 @@ fun StoryScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
-    val keyboardController = LocalSoftwareKeyboardController.current // LISÄTTY
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     var word1 by remember { mutableStateOf("") }
     var word2 by remember { mutableStateOf("") }
@@ -89,6 +90,8 @@ fun StoryScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
 
+            // Näytetään syöttökentät, jos ei olla lataamassa eikä katsomassa valmista satua
+            // Myös Error-tilassa näytetään kentät, jotta käyttäjä voi yrittää uudelleen.
             if (uiState !is StoryUiState.Success && uiState !is StoryUiState.Loading) {
 
                 if (uiState is StoryUiState.Error) {
@@ -183,15 +186,53 @@ fun StoryScreen(
                             color = StorybookPaper
                         )
 
-                        if (storyId == null) {
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        if (story.id.isEmpty()) {
+                            // Satu on vasta esikatselussa (Preview)
+                            Button(
+                                onClick = { viewModel.saveCurrentStory() },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = fi.antero.satumaa.ui.theme.Forest,
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Icon(Icons.Default.AutoAwesome, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Tallenna kirjahyllyyn")
+                            }
+
+                            Spacer(Modifier.height(12.dp))
+
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.resetState()
+                                    word1 = ""; word2 = ""; word3 = ""
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = StorybookPaper)
+                            ) {
+                                Text("Hylkää ja tee uusi")
+                            }
+                        } else {
+                            // Satu on tallennettu tai ladattu kirjastosta
+                            if (storyId == null) {
+                                Text(
+                                    "✓ Tallennettu kirjahyllyyn",
+                                    color = fi.antero.satumaa.ui.theme.Forest,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                )
+                                Spacer(Modifier.height(16.dp))
+                            }
+
                             Button(
                                 onClick = {
                                     viewModel.resetState()
-                                    word1 = ""
-                                    word2 = ""
-                                    word3 = ""
+                                    word1 = ""; word2 = ""; word3 = ""
                                 },
-                                modifier = Modifier.padding(top = 32.dp).align(Alignment.CenterHorizontally),
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = StorybookPaper.copy(alpha = 0.2f),
                                     contentColor = StorybookPaper

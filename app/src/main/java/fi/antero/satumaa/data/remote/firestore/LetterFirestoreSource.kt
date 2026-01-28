@@ -1,6 +1,5 @@
 package fi.antero.satumaa.data.remote.firestore
 
-import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -28,23 +27,23 @@ class LetterFirestoreSource @Inject constructor(
 
             snapshot.documents.mapNotNull { it.toLetterDto() }
         } catch (e: Exception) {
-            Log.e("LetterFirestoreSource", "Virhe haettaessa kirjeitä", e)
+            // Jos haku epäonnistuu (esim. offline), palautetaan tyhjä lista.
+            // Repository pitää huolen, että paikallinen data näytetään silti.
             emptyList()
         }
     }
 
+    // Poistaa kirjeen (WorkManager tai Repository kutsuu)
     suspend fun deleteLetter(letterId: String) {
         val userId = auth.currentUser?.uid ?: return
-        try {
-            firestore.collection("users")
-                .document(userId)
-                .collection("letters")
-                .document(letterId)
-                .delete()
-                .await()
-        } catch (e: Exception) {
-            Log.e("LetterFirestoreSource", "Virhe poistettaessa kirjettä: $letterId", e)
-            throw e // Heitetään virhe, jotta Worker tietää yrittää uudelleen
-        }
+
+        // Annetaan mahdollisen virheen (esim. verkkovirhe) nousta ylös,
+        // jotta WorkManager tietää yrittää uudelleen.
+        firestore.collection("users")
+            .document(userId)
+            .collection("letters")
+            .document(letterId)
+            .delete()
+            .await()
     }
 }

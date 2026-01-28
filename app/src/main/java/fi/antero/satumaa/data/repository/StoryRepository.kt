@@ -38,42 +38,47 @@ class StoryRepository @Inject constructor(
     }
 
     suspend fun refreshStories() {
-        Log.d("StoryRepository", "Synkronoidaan sadut...")
-        val dtos = firestoreSource.getUserStories()
-        if (dtos.isNotEmpty()) {
-            val entities = dtos.map { it.toEntity() }
-            storyDao.insertStories(entities)
-            Log.d("StoryRepository", "Tallennettu ${entities.size} satua tietokantaan.")
+        try {
+            val dtos = firestoreSource.getUserStories()
+            if (dtos.isNotEmpty()) {
+                val entities = dtos.map { it.toEntity() }
+                storyDao.insertStories(entities)
+            }
+        } catch (e: Exception) {
+            Log.e("StoryRepository", "Synkronointi epäonnistui: ${e.message}")
         }
     }
 
-    // --- KORJATTU METODI VERKON TARKISTUKSELLA ---
-    suspend fun generateAndSaveStory(
+    // 1. VAIHE: Generointi
+    suspend fun generateStoryPreview(
         childName: String,
         keywords: List<String>,
         length: String,
         style: String
-    ): Result<String> {
-
-        // 1. Tarkistetaan onko laite verkossa ennen kuin yritetään mitään
+    ): Result<Story> {
         if (!isOnline()) {
-            return Result.failure(Exception("Ei verkkoyhteyttä. Tarkista netti ja yritä uudelleen."))
+            // Vaihdettu suomi -> tekninen koodi
+            return Result.failure(Exception("NETWORK_ERROR"))
+        }
+        return functionsSource.generateStory(childName, keywords, length, style)
+    }
+
+    // 2. VAIHE: Tallennus
+    suspend fun saveStory(story: Story): Result<String> {
+        if (!isOnline()) {
+            // Vaihdettu suomi -> tekninen koodi
+            return Result.failure(Exception("NETWORK_ERROR"))
         }
 
-        // 2. Kutsu Cloud Functionia
-        val generateResult = functionsSource.generateStory(childName, keywords, length, style)
+        val cloudResult = functionsSource.saveStoryToCloud(story)
 
-        return generateResult.mapCatching { storyId ->
-            val storyDto = firestoreSource.getStoryById(storyId)
-                ?: throw Exception("Satu luotiin, mutta sitä ei löytynyt haettaessa.")
-
-            storyDao.insertStory(storyDto.toEntity())
-            Log.d("StoryRepository", "Uusi satu tallennettu: $storyId")
-            storyId
+        return cloudResult.mapCatching { newId ->
+            val savedStory = story.copy(id = newId)
+            storyDao.insertStory(savedStory.toEntity())
+            newId
         }
     }
 
-    // Apufunktio verkon tilan tarkistamiseen
     private fun isOnline(): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false

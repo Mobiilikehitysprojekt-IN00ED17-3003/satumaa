@@ -35,23 +35,20 @@ fun LetterFlowScreen(
     val state by vm.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
-    // --- KORJATTU LOGIIKKA: Nollaus ja lataus ---
+
+    var isLoadingInitial by remember { mutableStateOf(true) }
+
     LaunchedEffect(letterId) {
+        isLoadingInitial = true
         if (letterId != null) {
-            // Jos ID on annettu, ladataan vanha kirje (tullaan listasta)
             vm.loadLetter(letterId)
         } else {
-            // Jos ID on null (tullaan valikosta TAI palataan kartalta):
-            // Tarkistetaan, onko meillä "aktiivinen prosessi" käynnissä.
-            // Aktiivinen = Odotetaan vastausta (replying) TAI vastaus tuli juuri (replied + ei olla katselutilassa).
             val isActiveProcess = state.status == "replying" || (state.status == "replied" && !state.isViewMode)
-
-            // Nollataan näkymä vain, jos EI olla aktiivisessa prosessissa.
-            // Tämä estää nollauksen, kun palataan kartalta.
             if (!isActiveProcess) {
                 vm.resetToNewLetter()
             }
         }
+        isLoadingInitial = false
     }
 
     AppPageLayout(
@@ -66,6 +63,14 @@ fun LetterFlowScreen(
             )
         }
     ) { padding ->
+
+        if (isLoadingInitial) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = StorybookPaper)
+            }
+            return@AppPageLayout
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -78,10 +83,13 @@ fun LetterFlowScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            val showInput = !state.isViewMode && state.status != "replied" && state.status != "replying"
+            // Tilat selkeyden vuoksi
+            val isWritingNew = !state.isViewMode && state.status != "replied" && state.status != "replying"
+            val isWaiting = state.status == "replying"
+            val isReadyOrViewing = state.status == "replied" || (state.isViewMode && state.sentText.isNotEmpty())
 
             // --- VAIHE 1: KIRJOITA UUSI KIRJE ---
-            if (showInput) {
+            if (isWritingNew) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -110,7 +118,6 @@ fun LetterFlowScreen(
                         .background(Color.Black.copy(0.5f), RoundedCornerShape(16.dp))
                         .padding(16.dp)
                 ) {
-                    // --- TEKSTIKENTTÄ LASKURILLA ---
                     val maxChar = 200
                     val charsRemaining = maxChar - state.text.length
 
@@ -151,8 +158,11 @@ fun LetterFlowScreen(
 
                     Button(
                         onClick = {
-                            vm.sendLetter(userName)
-                            onNavigate(RootRoute.LetterMap.route)
+                            // TÄSSÄ ON KORJAUS:
+                            // Navigoidaan kartalle VAIN, jos lähetys onnistuu (onSuccess).
+                            vm.sendLetter(userName, onSuccess = {
+                                onNavigate(RootRoute.LetterMap.route)
+                            })
                         },
                         enabled = state.text.trim().isNotEmpty() && !state.isSending,
                         modifier = Modifier.fillMaxWidth(),
@@ -166,29 +176,36 @@ fun LetterFlowScreen(
                 }
             }
 
-            // Virheilmoitus
+            // Virheilmoitus (näytetään esim. jos 10 kirjeen raja paukkuu tai on liian nopea)
             state.error?.let { msg ->
                 Spacer(Modifier.height(16.dp))
                 ErrorView(
                     message = msg,
-                    onRetry = { vm.sendLetter(userName) }
+                    onRetry = {
+                        vm.sendLetter(userName, onSuccess = {
+                            onNavigate(RootRoute.LetterMap.route)
+                        })
+                    }
                 )
             }
 
             // --- VAIHE 2: ODOTETAAN VASTAUSTA ---
-            if (state.status == "replying") {
+            if (isWaiting) {
                 Spacer(Modifier.height(24.dp))
-                Text(
-                    text = "Pukki miettii vastausta... 🎅",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = StorybookPaper
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = StorybookPaper)
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "Pukki miettii vastausta... 🎅",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = StorybookPaper
+                    )
+                }
             }
 
             // --- VAIHE 3: VASTAUS SAAPUI / VANHAN KIRJEEN KATSELU ---
-            if (state.status == "replied" || (state.isViewMode && state.sentText.isNotEmpty())) {
+            if (isReadyOrViewing) {
 
-                // 1. OMA KIRJE
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -210,7 +227,6 @@ fun LetterFlowScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // 2. PUKIN VASTAUS
                 if (!state.replyText.isNullOrEmpty()) {
                     Column(
                         modifier = Modifier
@@ -253,7 +269,6 @@ fun LetterFlowScreen(
                     )
                 }
 
-                // "KIRJOITA UUSI KIRJE" -PAINIKE
                 Spacer(Modifier.height(24.dp))
                 OutlinedButton(
                     onClick = {

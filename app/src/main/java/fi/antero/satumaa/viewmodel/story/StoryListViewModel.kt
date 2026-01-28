@@ -14,9 +14,7 @@ class StoryListViewModel @Inject constructor(
     private val repository: StoryRepository
 ) : ViewModel() {
 
-    // Tämä muuttuja on suora yhteys tietokantaan.
-    // Aina kun Room-tietokanta muuttuu (esim. synkkaus valmistuu tai satu poistetaan),
-    // tämä päivittyy automaattisesti. Tyyppi on List<Story>.
+
     val stories = repository.getStories()
         .stateIn(
             scope = viewModelScope,

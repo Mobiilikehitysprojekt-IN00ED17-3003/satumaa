@@ -20,11 +20,12 @@ class DeleteLetterWorker @AssistedInject constructor(
         val letterId = inputData.getString("letterId") ?: return Result.failure()
 
         return try {
-            Log.d("DeleteWorker", "Poistetaan kirjettä pilvestä: $letterId")
+            Log.d("DeleteLetterWorker", "Deleting letter from cloud: $letterId")
             firestoreSource.deleteLetter(letterId)
             Result.success()
         } catch (e: Exception) {
-            Log.e("DeleteWorker", "Poisto epäonnistui, yritetään myöhemmin", e)
+            Log.e("DeleteLetterWorker", "Delete failed, retrying later", e)
+
             if (runAttemptCount < 3) {
                 Result.retry()
             } else {
