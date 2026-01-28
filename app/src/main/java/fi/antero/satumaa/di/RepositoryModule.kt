@@ -10,6 +10,8 @@ import fi.antero.satumaa.data.repository.LetterRepository
 import fi.antero.satumaa.data.repository.LetterRepositoryImpl
 import fi.antero.satumaa.data.repository.LocationRepository
 import fi.antero.satumaa.data.repository.LocationRepositoryImpl
+import fi.antero.satumaa.data.repository.StoryRepository
+import fi.antero.satumaa.data.repository.StoryRepositoryImpl
 import javax.inject.Singleton
 
 @Module
@@ -27,6 +29,12 @@ abstract class RepositoryModule {
     abstract fun bindLetterRepository(
         letterRepositoryImpl: LetterRepositoryImpl
     ): LetterRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindStoryRepository(
+        storyRepositoryImpl: StoryRepositoryImpl
+    ): StoryRepository
 
     @Binds
     @Singleton
