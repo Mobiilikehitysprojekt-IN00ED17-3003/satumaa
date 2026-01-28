@@ -9,8 +9,10 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import dagger.hilt.android.qualifiers.ApplicationContext
 import fi.antero.satumaa.data.local.dao.LetterDao
 import fi.antero.satumaa.data.local.entity.LetterEntity
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import java.util.Date
 
 class LetterRepositoryImpl @Inject constructor(
     private val db: FirebaseFirestore,
@@ -55,12 +58,48 @@ class LetterRepositoryImpl @Inject constructor(
 
     override suspend fun sendLetter(letterText: String, childName: String): Result<String> {
         val uid = auth.currentUser?.uid
-            ?: return Result.failure(IllegalStateException("Käyttäjä ei ole kirjautunut"))
+            ?: return Result.failure(IllegalStateException("AUTH_REQUIRED"))
 
         if (!isOnline()) {
-            return Result.failure(Exception("Ei verkkoyhteyttä. Tarkista netti."))
+            return Result.failure(Exception("NETWORK_ERROR"))
         }
 
+        val collectionRef = db.collection("users").document(uid).collection("letters")
+
+        // --- 1. TARKISTUKSET (Client-side) ---
+        try {
+            // Tarkista määrä (Max 10)
+            val countQuery = collectionRef.count().get(AggregateSource.SERVER).await()
+            if (countQuery.count >= 10) {
+                return Result.failure(Exception("MAILBOX_FULL"))
+            }
+
+            // Tarkista aika (Max 1 kirje / minuutti)
+            val lastLetterQuery = collectionRef
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .await()
+
+            if (!lastLetterQuery.isEmpty) {
+                val lastDoc = lastLetterQuery.documents[0]
+                val lastDate = lastDoc.getTimestamp("createdAt")?.toDate()
+
+                if (lastDate != null) {
+                    val diff = Date().time - lastDate.time
+                    if (diff < 60 * 1000) {
+                        return Result.failure(Exception("RATE_LIMIT_LETTER"))
+                    }
+                }
+            }
+
+        } catch (e: Exception) {
+            // Jos tarkistus epäonnistuu (esim. verkkovirhe), emme estä lähetystä tässä,
+            // vaan annamme backendin sääntöjen päättää.
+            e.printStackTrace()
+        }
+
+        // --- 2. VARSINAINEN LÄHETYS ---
         val data = hashMapOf(
             "userId" to uid,
             "childName" to childName,
@@ -76,6 +115,7 @@ class LetterRepositoryImpl @Inject constructor(
                 .add(data)
                 .await()
 
+            // Tallennetaan myös paikallisesti heti
             val newLetterEntity = LetterEntity(
                 id = docRef.id,
                 userId = uid,
@@ -89,8 +129,19 @@ class LetterRepositoryImpl @Inject constructor(
             letterDao.insertLetter(newLetterEntity)
 
             Result.success(docRef.id)
+
         } catch (e: Exception) {
-            Result.failure(e)
+            // Jos backendin Security Rules estää tallennuksen (koska 10 raja täynnä),
+
+            val msg = e.message ?: ""
+            if (msg.contains("PERMISSION_DENIED", ignoreCase = true) ||
+                msg.contains("Missing or insufficient permissions")) {
+
+                Result.failure(Exception("MAILBOX_FULL"))
+            } else {
+                // Muut virheet
+                Result.failure(e)
+            }
         }
     }
 

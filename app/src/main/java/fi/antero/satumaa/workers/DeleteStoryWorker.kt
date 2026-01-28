@@ -21,8 +21,7 @@ class DeleteStoryWorker @AssistedInject constructor(
         val storyId = inputData.getString("STORY_ID") ?: return Result.failure()
 
         return try {
-            Log.d("DeleteWorker", "Poistetaan satua pilvestä: $storyId")
-
+            Log.d("DeleteStoryWorker", "Deleting story from cloud: $storyId")
 
             val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
             val userId = auth.currentUser?.uid
@@ -34,15 +33,16 @@ class DeleteStoryWorker @AssistedInject constructor(
                     .document(storyId)
                     .delete()
                     .await()
-                Log.d("DeleteWorker", "Satu poistettu onnistuneesti.")
+
+                Log.d("DeleteStoryWorker", "Story deleted successfully.")
                 Result.success()
             } else {
-                Log.e("DeleteWorker", "Ei kirjautunutta käyttäjää, ei voida poistaa pilvestä.")
+                Log.e("DeleteStoryWorker", "No logged-in user, cannot delete from cloud.")
                 Result.failure()
             }
 
         } catch (e: Exception) {
-            Log.e("DeleteWorker", "Virhe poistossa", e)
+            Log.e("DeleteStoryWorker", "Error deleting story", e)
             if (runAttemptCount < 3) Result.retry() else Result.failure()
         }
     }

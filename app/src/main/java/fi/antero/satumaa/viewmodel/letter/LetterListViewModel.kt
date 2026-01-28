@@ -27,7 +27,11 @@ class LetterListViewModel @Inject constructor(
 
     fun refreshLetters() {
         viewModelScope.launch {
-            repository.refreshLetters()
+            try {
+                repository.refreshLetters()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -24,6 +23,8 @@ import fi.antero.satumaa.ui.theme.LocalAppImages
 import fi.antero.satumaa.ui.viewmodel.letter.LetterListViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+// TÄRKEÄ: Tämä import tarvitaan, jotta tunnistamme Timestamp-objektin
+import com.google.firebase.Timestamp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -126,12 +127,26 @@ fun LetterCard(
     onDelete: () -> Unit
 ) {
     val isReplied = letter.status == "replied"
-    // Pidetään vain väri indikoimassa tilaa (Vihreä = valmis, Oranssi = odottaa)
     val statusColor = if (isReplied) Color(0xFF2E6B5B) else Color(0xFFB4573A)
 
+    // PÄIVÄMÄÄRÄN KÄSITTELY ---
+
     val dateString = remember(letter.createdAt) {
-        val date = letter.createdAt?.toDate() ?: Date()
-        SimpleDateFormat("d.M.yyyy HH:mm", Locale.getDefault()).format(date)
+        try {
+            // "Huijataan" Kotlinia käsittelemään tätä geneerisenä objektina hetken
+            val raw: Any? = letter.createdAt
+
+            val dateToFormat: Date = when (raw) {
+                is Timestamp -> raw.toDate() // Jos Firestore palautti Timestampin -> muunna Dateksi
+                is Date -> raw               // Jos se on jo Date -> käytä sellaisenaan
+                else -> Date()               // Jos null tai tuntematon -> käytä nykyhetkeä
+            }
+
+            SimpleDateFormat("d.M.yyyy HH:mm", Locale.getDefault()).format(dateToFormat)
+        } catch (e: Exception) {
+
+            ""
+        }
     }
 
     Card(
@@ -148,7 +163,6 @@ fun LetterCard(
                 .padding(16.dp)
                 .height(IntrinsicSize.Min)
         ) {
-            // Tilapalkki vasemmalla
             Box(
                 modifier = Modifier
                     .width(6.dp)
@@ -159,7 +173,6 @@ fun LetterCard(
             Spacer(Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                // Näytetään vain päivämäärä
                 Text(
                     text = dateString,
                     style = MaterialTheme.typography.labelSmall,
@@ -168,7 +181,6 @@ fun LetterCard(
 
                 Spacer(Modifier.height(8.dp))
 
-                // Kirjeen lyhennelmä
                 Text(
                     text = letter.letterText,
                     style = MaterialTheme.typography.bodyMedium,

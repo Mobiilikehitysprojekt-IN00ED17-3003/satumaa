@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import fi.antero.satumaa.data.repository.AuthRepository
-import fi.antero.satumaa.util.toUserFriendlyMessage // UUSI IMPORT
+import fi.antero.satumaa.util.toUserFriendlyMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,61 +21,43 @@ class AuthViewModel @Inject constructor(
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     init {
+        // Vain kevyt tarkistus onko käyttäjä jo sisällä
         val currentUser = repository.currentUser
         if (currentUser != null) {
-            Log.e("TOKEN_DEBUG", "Käyttäjä valmiiksi kirjautunut: ${currentUser.email}")
-            currentUser.getIdToken(true).addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Log.e("TOKEN_DEBUG", "VANHA TOKEN: " + (task.result?.token ?: "null"))
-                }
-            }
             _uiState.value = AuthUiState.Success(currentUser)
-        } else {
-            Log.e("TOKEN_DEBUG", "Ei valmiiksi kirjautunutta käyttäjää.")
         }
     }
 
     fun signInAnonymously() {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
-
-            val result = repository.signInAnonymously()
-
-            result.onSuccess { user ->
-                _uiState.value = AuthUiState.Success(user)
-            }.onFailure { error ->
-
-                _uiState.value = AuthUiState.Error(error.toUserFriendlyMessage())
-            }
+            repository.signInAnonymously()
+                .onSuccess { user ->
+                    _uiState.value = AuthUiState.Success(user)
+                }
+                .onFailure { error ->
+                    _uiState.value = AuthUiState.Error(error.toUserFriendlyMessage())
+                }
         }
     }
 
     fun signInWithGoogle(idToken: String) {
-        Log.e("TOKEN_DEBUG", "signInWithGoogle kutsuttu! ID Tokenin pituus: ${idToken.length}")
-        _uiState.value = AuthUiState.Loading
-
         viewModelScope.launch {
-            val result = repository.signInWithGoogle(idToken)
-
-            result.onSuccess { user ->
-                Log.e("TOKEN_DEBUG", "Repository palautti Success!")
-                user.getIdToken(true).addOnCompleteListener { task ->
-                    val token = task.result?.token
-                    Log.e("TOKEN_DEBUG", "========================================")
-                    Log.e("TOKEN_DEBUG", "UUSI TOKEN: $token")
-                    Log.e("TOKEN_DEBUG", "========================================")
+            _uiState.value = AuthUiState.Loading
+            repository.signInWithGoogle(idToken)
+                .onSuccess { user ->
+                    _uiState.value = AuthUiState.Success(user)
                 }
-                _uiState.value = AuthUiState.Success(user)
-            }.onFailure { error ->
-                Log.e("TOKEN_DEBUG", "Kirjautuminen epäonnistui: ${error.message}")
+                .onFailure { error ->
 
-                _uiState.value = AuthUiState.Error(error.toUserFriendlyMessage())
-            }
+                    Log.e("AuthViewModel", "Google Sign-In failed: ${error.message}")
+
+                    _uiState.value = AuthUiState.Error(error.toUserFriendlyMessage())
+                }
         }
     }
 
     fun signOut() {
-        Log.e("TOKEN_DEBUG", "Kirjaudutaan ulos.")
         repository.signOut()
         _uiState.value = AuthUiState.Idle
     }

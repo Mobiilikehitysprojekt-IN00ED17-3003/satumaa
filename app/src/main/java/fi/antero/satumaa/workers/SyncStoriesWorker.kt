@@ -18,12 +18,12 @@ class SyncStoriesWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
-            Log.d("SyncWorker", "Aloitetaan taustasynkkaus...")
+            Log.d("SyncStoriesWorker", "Starting background sync...")
             repository.refreshStories()
-            Log.d("SyncWorker", "Taustasynkkaus valmis.")
+            Log.d("SyncStoriesWorker", "Background sync completed.")
             Result.success()
         } catch (e: Exception) {
-            Log.e("SyncWorker", "Synkkaus epäonnistui", e)
+            Log.e("SyncStoriesWorker", "Sync failed", e)
             if (runAttemptCount < 3) {
                 Result.retry()
             } else {
