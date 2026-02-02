@@ -1,9 +1,11 @@
 package fi.antero.satumaa.viewmodel.letter
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import fi.antero.satumaa.data.repository.LetterRepository
+import fi.antero.satumaa.util.MathChallengeGenerator
 import fi.antero.satumaa.util.mapErrorToUserMessage
 import fi.antero.satumaa.util.toUserFriendlyMessage
 import kotlinx.coroutines.delay
@@ -36,7 +38,6 @@ class LetterViewModel @Inject constructor(
                 val isViewMode = currentUiState.isViewMode
 
                 // 1. PÄIVITETÄÄN AINA NYKYISEN KIRJEEN TILA (isOpened)
-                // Tämä varmistaa, että kun palataan kamerasta, tila päivittyy UI:ssa
                 if (currentId != null) {
                     val targetLetter = letters.find { it.id == currentId }
                     if (targetLetter != null) {
@@ -117,6 +118,39 @@ class LetterViewModel @Inject constructor(
         refresh()
     }
 
+    // --- MATEMATIIKKA LOGIIKKA ---
+
+    fun showMathChallenge() {
+        _uiState.update {
+            it.copy(
+                isMathDialogVisible = true,
+                mathChallenge = MathChallengeGenerator.generateChallenge(),
+                mathError = false
+            )
+        }
+    }
+
+    fun dismissMathChallenge() {
+        _uiState.update { it.copy(isMathDialogVisible = false, mathError = false) }
+    }
+
+    fun submitMathAnswer(answerString: String) {
+        val challenge = _uiState.value.mathChallenge ?: return
+        // Poistetaan mahdolliset välilyönnit
+        val userAnswer = answerString.trim().toIntOrNull()
+
+        if (userAnswer == challenge.correctAnswer) {
+            // Oikein meni -> Suljetaan dialogi ja avataan kirje
+            dismissMathChallenge()
+            markLetterAsOpened()
+        } else {
+            // Väärin -> Näytetään virhe
+            _uiState.update { it.copy(mathError = true) }
+        }
+    }
+
+    // ----------------------------
+
     fun markLetterAsOpened() {
         val currentId = uiState.value.currentLetterId ?: return
 
@@ -139,7 +173,7 @@ class LetterViewModel @Inject constructor(
         viewModelScope.launch {
             val letter = repo.getLetterById(id)
             if (letter != null) {
-
+                // Tarkistetaan onko avattu välimuistissa
                 val isOpened = letter.isOpened || locallyOpenedLetterIds.contains(id)
 
                 _uiState.update {

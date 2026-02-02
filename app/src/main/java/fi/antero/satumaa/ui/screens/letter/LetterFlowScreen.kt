@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,6 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -22,6 +26,7 @@ import fi.antero.satumaa.ui.navigation.RootRoute
 import fi.antero.satumaa.ui.theme.AppDimensions
 import fi.antero.satumaa.ui.theme.LocalAppImages
 import fi.antero.satumaa.ui.theme.StorybookPaper
+import fi.antero.satumaa.util.MathChallenge
 import fi.antero.satumaa.viewmodel.letter.LetterViewModel
 
 @Composable
@@ -48,6 +53,16 @@ fun LetterFlowScreen(
             }
         }
         isLoadingInitial = false
+    }
+
+    // NÄYTÄ MATIKKADIALOGI JOS TILA ON PÄÄLLÄ
+    if (state.isMathDialogVisible && state.mathChallenge != null) {
+        MathChallengeDialog(
+            challenge = state.mathChallenge!!,
+            isError = state.mathError,
+            onDismiss = { vm.dismissMathChallenge() },
+            onSubmit = { answer -> vm.submitMathAnswer(answer) }
+        )
     }
 
     AppPageLayout(
@@ -271,8 +286,9 @@ fun LetterFlowScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = StorybookPaper.copy(alpha = 0.8f)
                         )
-                        Spacer(Modifier.height(24.dp))
+                        Spacer(Modifier.height(32.dp))
 
+                        // NAPPI 1: Etsi AR-kameralla
                         Button(
                             onClick = {
                                 val id = state.currentLetterId
@@ -289,6 +305,30 @@ fun LetterFlowScreen(
                             )
                         ) {
                             Text("Etsi ja avaa kirje (AR)")
+                        }
+
+                        // --- EROTIN ---
+                        Spacer(Modifier.height(12.dp))
+
+                        Text(
+                            text = "Tai",
+                            color = StorybookPaper.copy(alpha = 0.9f),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(Modifier.height(12.dp))
+
+                        // NAPPI 2: Avaa tehtävällä
+                        Button(
+                            onClick = { vm.showMathChallenge() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = StorybookPaper,
+                                contentColor = Color.Black
+                            )
+                        ) {
+                            Text("Avaa ratkaisemalla tehtävä 🧮")
                         }
                     }
 
@@ -317,4 +357,92 @@ fun LetterFlowScreen(
             }
         }
     }
+}
+
+// Matematiikka-dialogi
+@Composable
+fun MathChallengeDialog(
+    challenge: MathChallenge,
+    isError: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (String) -> Unit
+) {
+    var answer by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = StorybookPaper,
+        titleContentColor = Color(0xFF1B1B1F),
+        textContentColor = Color(0xFF1B1B1F),
+        title = {
+            Text(
+                "Pukin pulmatehtävä",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    "Avaa kirje ratkaisemalla tämä lasku:",
+                    fontSize = 16.sp
+                )
+                Spacer(Modifier.height(16.dp))
+
+                // Tehtävä isolla
+                Text(
+                    text = challenge.question,
+                    style = MaterialTheme.typography.displaySmall,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2E6B5B) // Forest-väri
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = answer,
+                    onValueChange = {
+                        // Hyväksytään vain numerot, max 3 merkkiä
+                        if (it.length <= 3 && it.all { char -> char.isDigit() }) {
+                            answer = it
+                        }
+                    },
+                    label = { Text("Vastaus") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    isError = isError,
+                    supportingText = if (isError) { { Text("Hups! Yritä uudelleen.") } } else null,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF2E6B5B),
+                        focusedLabelColor = Color(0xFF2E6B5B),
+                        cursorColor = Color(0xFF2E6B5B),
+                        errorCursorColor = MaterialTheme.colorScheme.error
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSubmit(answer) },
+                enabled = answer.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF2E6B5B),
+                    contentColor = Color.White
+                )
+            ) {
+                Text("Avaa kirje")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color(0xFF1B1B1F)
+                )
+            ) {
+                Text("Peruuta")
+            }
+        }
+    )
 }
