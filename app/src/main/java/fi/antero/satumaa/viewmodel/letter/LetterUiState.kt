@@ -1,6 +1,7 @@
 package fi.antero.satumaa.viewmodel.letter
 
 import android.location.Location
+import fi.antero.satumaa.util.MathChallenge
 
 data class LetterUiState(
     // Nykyisen käsiteltävän kirjeen ID (tärkeä markAsOpened -toiminnolle)
@@ -39,5 +40,10 @@ data class LetterUiState(
     val isLocating: Boolean = false,
     val hasLocationPermission: Boolean = false,
 
-    val isOpened: Boolean = false
+    val isOpened: Boolean = false,
+
+    // --- UUDET: Matematiikkahaasteen tila ---
+    val isMathDialogVisible: Boolean = false,
+    val mathChallenge: MathChallenge? = null,
+    val mathError: Boolean = false // Jos vastattiin väärin
 )
