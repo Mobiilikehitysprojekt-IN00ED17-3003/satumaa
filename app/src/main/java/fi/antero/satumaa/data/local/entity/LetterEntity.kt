@@ -14,4 +14,5 @@ data class LetterEntity(
     val status: String,     // "replying", "replied", "error"
     val createdAt: Long,
     val repliedAt: Long?    // Voi olla null
+
 )

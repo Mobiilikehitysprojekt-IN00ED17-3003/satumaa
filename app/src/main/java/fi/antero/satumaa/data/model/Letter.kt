@@ -10,5 +10,6 @@ data class Letter(
     val createdAt: Timestamp? = null,
     val replyText: String? = null,
     val repliedAt: Timestamp? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isOpened: Boolean = false
 )

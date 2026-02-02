@@ -3,6 +3,9 @@ package fi.antero.satumaa.viewmodel.letter
 import android.location.Location
 
 data class LetterUiState(
+    // Nykyisen käsiteltävän kirjeen ID (tärkeä markAsOpened -toiminnolle)
+    val currentLetterId: String? = null,
+
     // Mitä käyttäjä kirjoittaa tekstikenttään parhaillaan
     val text: String = "",
 
@@ -34,5 +37,7 @@ data class LetterUiState(
     val userLocation: Location? = null,
     val distanceToSantaKm: Double? = null,
     val isLocating: Boolean = false,
-    val hasLocationPermission: Boolean = false
+    val hasLocationPermission: Boolean = false,
+
+    val isOpened: Boolean = false
 )

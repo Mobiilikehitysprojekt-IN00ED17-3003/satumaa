@@ -35,7 +35,6 @@ fun LetterFlowScreen(
     val state by vm.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
-
     var isLoadingInitial by remember { mutableStateOf(true) }
 
     LaunchedEffect(letterId) {
@@ -83,10 +82,11 @@ fun LetterFlowScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // Tilat selkeyden vuoksi
             val isWritingNew = !state.isViewMode && state.status != "replied" && state.status != "replying"
             val isWaiting = state.status == "replying"
-            val isReadyOrViewing = state.status == "replied" || (state.isViewMode && state.sentText.isNotEmpty())
+
+            // Näytetään vastausnäkymä jos vastattu TAI katsellaan vanhaa TAI kirje on avattu
+            val isReadyOrViewing = state.status == "replied" || (state.isViewMode && state.sentText.isNotEmpty()) || state.isOpened
 
             // --- VAIHE 1: KIRJOITA UUSI KIRJE ---
             if (isWritingNew) {
@@ -158,8 +158,6 @@ fun LetterFlowScreen(
 
                     Button(
                         onClick = {
-                            // TÄSSÄ ON KORJAUS:
-                            // Navigoidaan kartalle VAIN, jos lähetys onnistuu (onSuccess).
                             vm.sendLetter(userName, onSuccess = {
                                 onNavigate(RootRoute.LetterMap.route)
                             })
@@ -176,7 +174,6 @@ fun LetterFlowScreen(
                 }
             }
 
-            // Virheilmoitus (näytetään esim. jos 10 kirjeen raja paukkuu tai on liian nopea)
             state.error?.let { msg ->
                 Spacer(Modifier.height(16.dp))
                 ErrorView(
@@ -227,7 +224,9 @@ fun LetterFlowScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                if (!state.replyText.isNullOrEmpty()) {
+                // Tarkistetaan ENSIN onko avattu.
+                if (state.isOpened) {
+                    // A) KIRJE ON LÖYDETTY JA AVATTU
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -243,24 +242,56 @@ fun LetterFlowScreen(
                         Spacer(Modifier.height(12.dp))
 
                         Text(
-                            text = state.replyText.orEmpty(),
+                            text = state.replyText ?: "Kiitos kirjeestäsi! (Vastaustekstiä ei voitu ladata)",
                             style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
                             color = StorybookPaper
                         )
-
+                    }
+                } else if (!state.replyText.isNullOrEmpty() || state.status == "replied") {
+                    // B) KIRJE ON SAAPUNUT MUTTA SULJETTU (DUMMY)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(StorybookPaper.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "📩",
+                            style = MaterialTheme.typography.displayLarge
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            text = "Sinulle on saapunut vastaus!",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = StorybookPaper
+                        )
+                        Text(
+                            text = "Se on piilotettu huoneeseesi.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = StorybookPaper.copy(alpha = 0.8f)
+                        )
                         Spacer(Modifier.height(24.dp))
 
                         Button(
-                            onClick = { onNavigate(LetterRoutes.CAMERA) },
+                            onClick = {
+                                val id = state.currentLetterId
+                                if (id != null) {
+                                    onNavigate("${LetterRoutes.CAMERA}/$id")
+                                } else {
+                                    onNavigate(LetterRoutes.CAMERA)
+                                }
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = StorybookPaper,
                                 contentColor = Color.Black
                             )
                         ) {
-                            Text("Etsi vastaus kameralla (AR)")
+                            Text("Etsi ja avaa kirje (AR)")
                         }
                     }
+
                 } else if (state.isViewMode) {
                     Text(
                         text = "Pukki lukee vielä kirjettäsi...",
