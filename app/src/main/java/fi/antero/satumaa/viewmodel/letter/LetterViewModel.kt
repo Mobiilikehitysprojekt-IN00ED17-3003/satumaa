@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -24,21 +25,48 @@ class LetterViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(LetterUiState())
     val uiState: StateFlow<LetterUiState> = _uiState.asStateFlow()
 
+    // Pidämme kirjaa tässä sessiossa avatuista kirjeistä varmuuden vuoksi
+    private val locallyOpenedLetterIds = mutableSetOf<String>()
+
     init {
         repo.getLetters()
             .onEach { letters ->
+                val currentUiState = _uiState.value
+                val currentId = currentUiState.currentLetterId
+                val isViewMode = currentUiState.isViewMode
+
+                // 1. PÄIVITETÄÄN AINA NYKYISEN KIRJEEN TILA (isOpened)
+                // Tämä varmistaa, että kun palataan kamerasta, tila päivittyy UI:ssa
+                if (currentId != null) {
+                    val targetLetter = letters.find { it.id == currentId }
+                    if (targetLetter != null) {
+                        val isOpened = targetLetter.isOpened || locallyOpenedLetterIds.contains(targetLetter.id)
+
+                        if (isOpened != currentUiState.isOpened) {
+                            _uiState.update { it.copy(isOpened = isOpened) }
+                        }
+                    }
+                }
+
+                // 2. JOS OLLAAN KATSELUTILASSA, LOPETETAAN TÄHÄN
+                if (isViewMode) return@onEach
+
+                // 3. NORMAALI LOGIIKKA (UUSIN KIRJE / DRAFT)
                 val latestLetter = letters.firstOrNull()
-                val currentUiStatus = _uiState.value.status
-
-                if (_uiState.value.isViewMode) return@onEach
-
                 if (latestLetter != null) {
-                    // Estetään vanhan valmiin kirjeen lataus "Uusi kirje" -näkymään
+                    val currentUiStatus = currentUiState.status
                     val isDraftMode = currentUiStatus == null
                     val isOldFinishedLetter = latestLetter.status == "replied" || latestLetter.status == "error"
 
                     if (isDraftMode && isOldFinishedLetter) {
                         return@onEach
+                    }
+
+                    // Asetetaan ID ja tila
+                    val isLetterOpened = latestLetter.isOpened || locallyOpenedLetterIds.contains(latestLetter.id)
+
+                    if (currentId == null || currentId == latestLetter.id) {
+                        _uiState.update { it.copy(currentLetterId = latestLetter.id) }
                     }
 
                     val shouldUpdate = if (latestLetter.status == "replying") {
@@ -59,9 +87,9 @@ class LetterViewModel @Inject constructor(
                                 state.copy(
                                     status = "error",
                                     isSending = false,
-                                    // KÄÄNNETÄÄN BACKENDIN VIRHEKOODI SUOMEKSI
                                     error = latestLetter.errorMessage.mapErrorToUserMessage(),
-                                    sentText = latestLetter.letterText
+                                    sentText = latestLetter.letterText,
+                                    isOpened = isLetterOpened
                                 )
                             }
                         } else {
@@ -71,7 +99,8 @@ class LetterViewModel @Inject constructor(
                                     replyText = latestLetter.replyText,
                                     sentText = latestLetter.letterText,
                                     error = null,
-                                    showReplyArrived = shouldNotify
+                                    showReplyArrived = shouldNotify,
+                                    isOpened = isLetterOpened
                                 )
                             }
                         }
@@ -88,19 +117,42 @@ class LetterViewModel @Inject constructor(
         refresh()
     }
 
+    fun markLetterAsOpened() {
+        val currentId = uiState.value.currentLetterId ?: return
+
+        // 1. Optimistinen päivitys heti
+        _uiState.update { it.copy(isOpened = true) }
+        locallyOpenedLetterIds.add(currentId)
+
+        viewModelScope.launch {
+            repo.markAsOpened(currentId)
+
+            // 2. Varmistus: Haetaan kirje heti kannasta päivityksen jälkeen
+            val updatedLetter = repo.getLetterById(currentId)
+            if (updatedLetter != null && updatedLetter.isOpened) {
+                _uiState.update { it.copy(isOpened = true) }
+            }
+        }
+    }
+
     fun loadLetter(id: String) {
         viewModelScope.launch {
             val letter = repo.getLetterById(id)
             if (letter != null) {
+
+                val isOpened = letter.isOpened || locallyOpenedLetterIds.contains(id)
+
                 _uiState.update {
                     it.copy(
+                        currentLetterId = letter.id,
                         status = letter.status,
                         text = "",
                         sentText = letter.letterText,
                         replyText = letter.replyText,
                         isSending = false,
                         error = null,
-                        isViewMode = true
+                        isViewMode = true,
+                        isOpened = isOpened
                     )
                 }
             }
@@ -110,6 +162,7 @@ class LetterViewModel @Inject constructor(
     fun resetToNewLetter() {
         _uiState.update { current ->
             LetterUiState(
+                currentLetterId = null,
                 userLocation = current.userLocation,
                 distanceToSantaKm = current.distanceToSantaKm,
                 hasLocationPermission = current.hasLocationPermission,
@@ -119,7 +172,8 @@ class LetterViewModel @Inject constructor(
                 sentText = "",
                 replyText = null,
                 isViewMode = false,
-                error = null
+                error = null,
+                isOpened = false
             )
         }
     }
@@ -142,7 +196,8 @@ class LetterViewModel @Inject constructor(
                 error = null,
                 replyText = null,
                 isViewMode = false,
-                showReplyArrived = false
+                showReplyArrived = false,
+                isOpened = false
             )
         }
 
@@ -159,8 +214,7 @@ class LetterViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isSending = false,
-                        status = null, // Pidetään muokkaustilassa
-                        // KÄÄNNETÄÄN REPOSITORYN VIRHEKOODI SUOMEKSI
+                        status = null,
                         error = e.toUserFriendlyMessage()
                     )
                 }

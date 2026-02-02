@@ -18,4 +18,7 @@ interface LetterRepository {
 
     // UUSI: Poistaa kirjeen
     suspend fun deleteLetter(letterId: String)
+
+    // Onko kirje avattu
+    suspend fun markAsOpened(id: String)
 }

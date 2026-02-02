@@ -1,137 +1,17 @@
 package fi.antero.satumaa.ui
 
-import androidx.compose.runtime.*
-import androidx.navigation.compose.*
-import androidx.navigation.navArgument
-import fi.antero.satumaa.ui.navigation.LetterRoutes
+import androidx.compose.runtime.Composable
+import androidx.navigation.compose.rememberNavController
+import fi.antero.satumaa.ui.navigation.AppNavGraph
 import fi.antero.satumaa.ui.navigation.RootRoute
-import fi.antero.satumaa.ui.screens.auth.LoginScreen
-import fi.antero.satumaa.ui.screens.letter.LetterCameraScreen
-import fi.antero.satumaa.ui.screens.letter.LetterFlowScreen
-import fi.antero.satumaa.ui.screens.letter.LetterListScreen
-import fi.antero.satumaa.ui.screens.letter.LetterMapScreen
-import fi.antero.satumaa.ui.screens.menu.MenuScreen
-import fi.antero.satumaa.ui.screens.onboarding.OnboardingScreen
-import fi.antero.satumaa.ui.screens.profile.ProfileScreen
-import fi.antero.satumaa.ui.screens.story.StoryListScreen
-import fi.antero.satumaa.ui.screens.story.StoryScreen
 
 @Composable
 fun SatumaaApp() {
     val navController = rememberNavController()
-    val backStackEntry = navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry.value?.destination?.route
 
-    var adventurerName by remember { mutableStateOf("Seikkailija") }
 
-    val navigate: (String) -> Unit = { route ->
-        navController.navigate(route) {
-            launchSingleTop = true
-            restoreState = true
-        }
-    }
-
-    NavHost(
+    AppNavGraph(
         navController = navController,
         startDestination = RootRoute.Login.route
-    ) {
-        composable(RootRoute.Login.route) {
-            LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(RootRoute.Onboarding.route) {
-                        popUpTo(RootRoute.Login.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable(RootRoute.Onboarding.route) {
-            OnboardingScreen(
-                onNameSubmitted = { name ->
-                    adventurerName = name
-                    navController.navigate(RootRoute.Menu.route) {
-                        popUpTo(RootRoute.Onboarding.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable(RootRoute.Menu.route) {
-            MenuScreen(
-                currentRoute = currentRoute,
-                userName = adventurerName,
-                onNavigate = navigate
-            )
-        }
-
-        composable(
-            route = RootRoute.Story.route + "?storyId={storyId}",
-            arguments = listOf(navArgument("storyId") { nullable = true })
-        ) { entry ->
-            val storyId = entry.arguments?.getString("storyId")
-            StoryScreen(
-                userName = adventurerName,
-                storyId = storyId,
-                onNavigate = navigate
-            )
-        }
-
-        composable(RootRoute.StoryList.route) {
-            StoryListScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onStoryClick = { id ->
-                    navController.navigate(RootRoute.Story.createRoute(id))
-                }
-            )
-        }
-
-        // --- KIRJEET ---
-
-        // 1. Kirjeen kirjoitus ja katselu (tukee nyt letterId:tä)
-        composable(
-            route = RootRoute.Letter.route + "?letterId={letterId}",
-            arguments = listOf(navArgument("letterId") { nullable = true })
-        ) { entry ->
-            val letterId = entry.arguments?.getString("letterId")
-            LetterFlowScreen(
-                currentRoute = currentRoute,
-                onNavigate = navigate,
-                userName = adventurerName,
-                letterId = letterId
-            )
-        }
-
-        // 2. Vanhat kirjeet (Lista)
-        composable(RootRoute.LetterList.route) {
-            LetterListScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onLetterClick = { letterId ->
-                    navController.navigate(RootRoute.Letter.route + "?letterId=$letterId")
-                }
-            )
-        }
-
-        composable(LetterRoutes.CAMERA) {
-            LetterCameraScreen(
-                onFoundLetter = { navController.popBackStack() },
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        composable(RootRoute.LetterMap.route) {
-            LetterMapScreen(onBack = { navController.popBackStack() })
-        }
-
-        composable(RootRoute.Profile.route) {
-            ProfileScreen(
-                currentRoute = currentRoute,
-                onNavigate = navigate,
-                onLogout = {
-                    navController.navigate(RootRoute.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            )
-        }
-    }
+    )
 }
