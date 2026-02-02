@@ -1,6 +1,8 @@
 package fi.antero.satumaa.ui.screens.auth
 
+import android.Manifest
 import android.app.Activity
+import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,6 +25,7 @@ import fi.antero.satumaa.R
 import fi.antero.satumaa.ui.components.ErrorView
 import fi.antero.satumaa.ui.components.LoadingView
 import fi.antero.satumaa.ui.theme.LocalAppImages
+import fi.antero.satumaa.util.mapErrorToUserMessage // Lisätty import
 import fi.antero.satumaa.viewmodel.auth.AuthUiState
 import fi.antero.satumaa.viewmodel.auth.AuthViewModel
 
@@ -33,18 +36,24 @@ fun LoginScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-
-    // Paikallinen tila Google-kirjautumisen Intent-virheille
     var googleError by remember { mutableStateOf<String?>(null) }
 
-    val googleClientId = context.getString(R.string.default_web_client_id)
+    val notifPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { Log.d("LoginScreen", "Notification permission: $it") }
 
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 33) {
+            notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    val googleClientId = context.getString(R.string.default_web_client_id)
     val googleSignInClient = remember {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(googleClientId)
             .requestEmail()
             .build()
-
         GoogleSignIn.getClient(context, gso)
     }
 
@@ -52,34 +61,27 @@ fun LoginScreen(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         googleError = null
-
         if (result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)
                 val idToken = account.idToken
-
                 if (!idToken.isNullOrBlank()) {
-                    Log.d("AUTH", "Google account ok, token found.")
                     viewModel.signInWithGoogle(idToken)
                 } else {
-                    Log.e("AUTH", "Kirjautuminen epäonnistui: idToken puuttuu.")
-                    googleError = "Google-kirjautuminen epäonnistui (tunniste puuttuu)."
+                    // Käytetään teknistä koodia ja käännetään se
+                    googleError = "AUTH_GOOGLE_TOKEN_MISSING".mapErrorToUserMessage()
                 }
-
             } catch (e: ApiException) {
-                val msg = "Google Sign-In epäonnistui (koodi ${e.statusCode})."
-                Log.e("AUTH", msg, e)
-                googleError = "Google-kirjautuminen epäonnistui. Yritä uudelleen."
+                Log.e("LoginScreen", "Google Sign-In failed", e)
+                // Käytetään teknistä koodia ja käännetään se
+                googleError = "AUTH_GOOGLE_API_ERROR".mapErrorToUserMessage()
             }
-        } else {
-            Log.d("AUTH", "Google Sign-In peruutettu tai epäonnistui (resultCode=${result.resultCode})")
         }
     }
 
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
-            Log.d("AUTH", "AuthUiState.Success -> navigate")
             onLoginSuccess()
         }
     }
@@ -114,14 +116,11 @@ fun LoginScreen(
                     .weight(2f),
                 contentAlignment = Alignment.Center
             ) {
-                // KORJAUS: Otetaan tila lokaaliin muuttujaan, jotta Smart Cast toimii
-                val state = uiState
-
-                when (state) {
+                when (val state = uiState) {
                     is AuthUiState.Loading -> LoadingView()
                     is AuthUiState.Error -> {
                         ErrorView(
-                            message = state.message, // Nyt toimii ilman (uiState as ...) pakotusta
+                            message = state.message,
                             onRetry = {
                                 googleError = null
                                 viewModel.resetState()
@@ -130,7 +129,6 @@ fun LoginScreen(
                     }
                     else -> {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-
                             googleError?.let { msg ->
                                 ErrorView(
                                     message = msg,
@@ -138,7 +136,6 @@ fun LoginScreen(
                                     modifier = Modifier.padding(bottom = 16.dp)
                                 )
                             }
-
                             LoginButtons(
                                 onGoogleClick = {
                                     googleError = null
@@ -166,9 +163,7 @@ private fun LoginButtons(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Button(
             onClick = onGoogleClick,
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.fillMaxWidth(0.8f).padding(bottom = 12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Icon(

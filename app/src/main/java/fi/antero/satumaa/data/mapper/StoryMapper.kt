@@ -4,7 +4,7 @@ import fi.antero.satumaa.data.local.entity.StoryEntity
 import fi.antero.satumaa.data.model.Story
 import fi.antero.satumaa.data.remote.dto.StoryDto
 
-// Muuntaa tietokantarivin (Entity) sovelluksen käyttämäksi malliksi (Story)
+// Tietokannasta -> Sovellukseen
 fun StoryEntity.toDomainModel(): Story {
     return Story(
         id = id,
@@ -14,11 +14,12 @@ fun StoryEntity.toDomainModel(): Story {
         style = style,
         keywords = keywords,
         createdAt = createdAt,
-        isFavorite = isFavorite
+        isFavorite = isFavorite,
+        previewId = null
     )
 }
 
-// Jos tarvitsemme toisinpäin (esim. jos muokkaamme satua UI:ssa ja tallennamme):
+// Sovelluksesta -> Tietokantaan (Entity)
 fun Story.toEntity(): StoryEntity {
     return StoryEntity(
         id = id,
@@ -29,10 +30,12 @@ fun Story.toEntity(): StoryEntity {
         keywords = keywords,
         createdAt = createdAt,
         isFavorite = isFavorite
+        // HUOM: Emme tallenna previewId:tä paikalliseen kantaan, joten sitä ei tässä tarvita
     )
 }
 
-//  Muuntaa pilvidatan (DTO) tietokantariviksi (Entity)
+// Pilvestä (DTO) -> Tietokantaan (Entity)
+// Tätä käytetään vain vanhojen satujen latauksessa listaan
 fun StoryDto.toEntity(): StoryEntity {
     return StoryEntity(
         id = id,
@@ -40,7 +43,6 @@ fun StoryDto.toEntity(): StoryEntity {
         content = content,
         childName = childName,
         style = style,
-        // Muunnetaan lista takaisin yhdeksi merkkijonoksi tietokantaa varten
         keywords = keywords.joinToString(", "),
         createdAt = createdAt,
         isFavorite = isFavorite

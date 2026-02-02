@@ -33,30 +33,46 @@ class StoryViewModel @Inject constructor(
             val keywords = listOf(word1, word2, word3).map { it.trim() }.filter { it.isNotEmpty() }
 
             if (keywords.isEmpty()) {
-                _uiState.value = StoryUiState.Error("Kirjoita ainakin yksi taikasana!")
+                // Käytetään teknistä koodia, jonka ErrorUtils kääntää
+                _uiState.value = StoryUiState.Error(Exception("STORY_KEYWORDS_EMPTY").toUserFriendlyMessage())
                 return@launch
             }
 
             _uiState.value = StoryUiState.Loading
 
 
-            try {
-                val result = repository.generateAndSaveStory(
-                    childName = childName,
-                    keywords = keywords,
-                    length = length.apiValue,
-                    style = style.apiValue
-                )
+            val result = repository.generateStoryPreview(
+                childName = childName,
+                keywords = keywords,
+                length = length.apiValue,
+                style = style.apiValue
+            )
 
-                result.onSuccess { storyId ->
-                    loadStory(storyId)
+            result.onSuccess { previewStory ->
+                _uiState.value = StoryUiState.Success(previewStory)
+            }.onFailure { e ->
+                _uiState.value = StoryUiState.Error(e.toUserFriendlyMessage())
+            }
+        }
+    }
+
+    fun saveCurrentStory() {
+        val currentState = _uiState.value
+        if (currentState is StoryUiState.Success) {
+            val storyToSave = currentState.story
+
+            // Jos satu on jo tallennettu (sillä on ID), ei tehdä mitään
+            if (storyToSave.id.isNotEmpty()) return
+
+            viewModelScope.launch {
+                val result = repository.saveStory(storyToSave)
+
+                result.onSuccess { newId ->
+                    val savedStory = storyToSave.copy(id = newId)
+                    _uiState.value = StoryUiState.Success(savedStory)
                 }.onFailure { e ->
-
                     _uiState.value = StoryUiState.Error(e.toUserFriendlyMessage())
                 }
-            } catch (e: Exception) {
-
-                _uiState.value = StoryUiState.Error(e.toUserFriendlyMessage())
             }
         }
     }
@@ -69,9 +85,11 @@ class StoryViewModel @Inject constructor(
                 if (story != null) {
                     _uiState.value = StoryUiState.Success(story)
                 } else {
-                    _uiState.value = StoryUiState.Error("Satua ei löytynyt.")
+                    // Käytetään teknistä koodia
+                    _uiState.value = StoryUiState.Error(Exception("STORY_NOT_FOUND").toUserFriendlyMessage())
                 }
             } catch (e: Exception) {
+                // Varmistetaan, että tietokantavirheetkin käännetään
                 _uiState.value = StoryUiState.Error(e.toUserFriendlyMessage())
             }
         }

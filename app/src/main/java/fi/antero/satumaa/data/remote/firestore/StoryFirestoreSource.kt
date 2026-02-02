@@ -1,6 +1,5 @@
 package fi.antero.satumaa.data.remote.firestore
 
-import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -14,6 +13,9 @@ class StoryFirestoreSource @Inject constructor(
     private val auth: FirebaseAuth
 ) {
 
+    /**
+     * Hakee kaikki käyttäjän sadut pilvestä.
+     */
     suspend fun getUserStories(): List<StoryDto> {
         val userId = auth.currentUser?.uid ?: return emptyList()
 
@@ -27,25 +29,25 @@ class StoryFirestoreSource @Inject constructor(
 
             snapshot.documents.mapNotNull { it.toStoryDto() }
         } catch (e: Exception) {
-            Log.e("StoryFirestoreSource", "Virhe haettaessa satuja", e)
+            // Hiljainen epäonnistuminen listan haussa on usein parempi taustasynkkaukselle.
+            // Repository käyttää tällöin vain paikallista tietokantaa.
             emptyList()
         }
     }
 
+    /**
+     * Hakee yksittäisen sadun pilvestä ID:n perusteella.
+     */
     suspend fun getStoryById(storyId: String): StoryDto? {
         val userId = auth.currentUser?.uid ?: return null
-        return try {
-            val snapshot = firestore.collection("users")
-                .document(userId)
-                .collection("stories")
-                .document(storyId)
-                .get()
-                .await()
 
-            snapshot.toStoryDto()
-        } catch (e: Exception) {
-            Log.e("StoryFirestoreSource", "Virhe haettaessa yksittäistä satua", e)
-            null
-        }
+        val snapshot = firestore.collection("users")
+            .document(userId)
+            .collection("stories")
+            .document(storyId)
+            .get()
+            .await()
+
+        return snapshot.toStoryDto()
     }
 }

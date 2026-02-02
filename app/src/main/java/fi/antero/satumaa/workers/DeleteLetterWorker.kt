@@ -7,23 +7,25 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import fi.antero.satumaa.data.repository.StoryRepository
+import fi.antero.satumaa.data.remote.firestore.LetterFirestoreSource
 
 @HiltWorker
-class SyncStoriesWorker @AssistedInject constructor(
+class DeleteLetterWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val repository: StoryRepository
+    private val firestoreSource: LetterFirestoreSource
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
+        val letterId = inputData.getString("letterId") ?: return Result.failure()
+
         return try {
-            Log.d("SyncStoriesWorker", "Starting background sync...")
-            repository.refreshStories()
-            Log.d("SyncStoriesWorker", "Background sync completed.")
+            Log.d("DeleteLetterWorker", "Deleting letter from cloud: $letterId")
+            firestoreSource.deleteLetter(letterId)
             Result.success()
         } catch (e: Exception) {
-            Log.e("SyncStoriesWorker", "Sync failed", e)
+            Log.e("DeleteLetterWorker", "Delete failed, retrying later", e)
+
             if (runAttemptCount < 3) {
                 Result.retry()
             } else {

@@ -7,7 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Person // Lisätty profiili-ikoni
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -29,7 +29,8 @@ fun AppTopBar(
     showBack: Boolean = false,
     onBack: (() -> Unit)? = null,
     onOpenProfile: (() -> Unit)? = null,
-    onOpenLibrary: (() -> Unit)? = null
+    onOpenLibrary: (() -> Unit)? = null,
+    libraryLabel: String = "Omat sadut"
 ) {
     val (expanded, setExpanded) = remember { mutableStateOf(false) }
 
@@ -54,7 +55,6 @@ fun AppTopBar(
             }
         },
         actions = {
-            // Valikkonappi
             IconButton(onClick = { setExpanded(true) }) {
                 Icon(
                     Icons.Default.MoreVert,
@@ -63,35 +63,30 @@ fun AppTopBar(
                 )
             }
 
-            // Tyylitelty pudotusvalikko
             DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { setExpanded(false) },
-                // 1. Lämmin paperin väri taustaksi
                 containerColor = StorybookPaper,
-                // 2. Pyöristetyt kulmat (pehmeämpi ilme)
                 shape = RoundedCornerShape(16.dp),
-                // 3. Hienovarainen reunus
                 border = BorderStroke(1.dp, OutlineSoft),
-                // Hieman varjoa erottamaan taustasta
                 shadowElevation = 4.dp,
-                modifier = Modifier.padding(end = 8.dp) // Pieni väli reunaan
+                modifier = Modifier.padding(end = 8.dp)
             ) {
 
                 if (onOpenLibrary != null) {
                     DropdownMenuItem(
                         text = {
                             Text(
-                                "Omat sadut",
+                                text = libraryLabel, // Käytetään parametria tässä
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = Ink // Tumma teksti
+                                color = Ink
                             )
                         },
                         leadingIcon = {
                             Icon(
                                 Icons.AutoMirrored.Filled.List,
                                 contentDescription = null,
-                                tint = Forest // Vihreä teemaväri
+                                tint = Forest
                             )
                         },
                         onClick = {
@@ -111,7 +106,6 @@ fun AppTopBar(
                             )
                         },
                         leadingIcon = {
-                            // Lisätty ikoni myös profiilille symmetrian vuoksi
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = null,

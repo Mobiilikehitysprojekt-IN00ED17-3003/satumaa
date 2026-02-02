@@ -16,4 +16,6 @@ sealed class RootRoute(val route: String) {
 
     data object LetterMap : RootRoute("letter_map")
     data object Profile : RootRoute("profile")
+
+    data object LetterList : RootRoute("letter_list")
 }

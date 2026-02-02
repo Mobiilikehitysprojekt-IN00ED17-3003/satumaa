@@ -8,5 +8,6 @@ data class Story(
     val style: String,
     val keywords: String,
     val createdAt: Long,
-    val isFavorite: Boolean
+    val isFavorite: Boolean,
+    val previewId: String? = null
 )

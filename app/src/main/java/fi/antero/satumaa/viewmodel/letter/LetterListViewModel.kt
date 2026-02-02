@@ -1,21 +1,20 @@
-package fi.antero.satumaa.ui.viewmodel.story
+package fi.antero.satumaa.ui.viewmodel.letter
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import fi.antero.satumaa.data.repository.StoryRepository
+import fi.antero.satumaa.data.repository.LetterRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class StoryListViewModel @Inject constructor(
-    private val repository: StoryRepository
+class LetterListViewModel @Inject constructor(
+    private val repository: LetterRepository
 ) : ViewModel() {
 
-
-    val stories = repository.getStories()
+    val letters = repository.getLetters()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -23,19 +22,22 @@ class StoryListViewModel @Inject constructor(
         )
 
     init {
-        // Kun ViewModel luodaan (käyttäjä avaa listan), aloitetaan synkronointi taustalla.
-        refreshStories()
+        refreshLetters()
     }
 
-    fun refreshStories() {
+    fun refreshLetters() {
         viewModelScope.launch {
-            repository.refreshStories()
+            try {
+                repository.refreshLetters()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
-    fun deleteStory(storyId: String) {
+    fun deleteLetter(letterId: String) {
         viewModelScope.launch {
-            repository.deleteStory(storyId)
+            repository.deleteLetter(letterId)
         }
     }
 }
