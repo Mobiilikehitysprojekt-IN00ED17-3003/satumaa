@@ -13,8 +13,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -22,6 +24,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import fi.antero.satumaa.util.TravelTimeCalculator
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -29,10 +32,12 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import kotlin.random.Random
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LetterMapScreen(
+    letterId: String, // UUSI PARAMETRI: Tarvitaan matka-ajan laskentaan
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -49,9 +54,14 @@ fun LetterMapScreen(
         )
     }
 
-    // Animaatiologiikka, jossa arvo liikkuu 0.0 - 1.0 välillä
-    val travelProgress = remember { Animatable(0f) }
-    val travelDuration = remember { Random.nextInt(10000, 20000) } // Randomisoitu kirjeen kulkuaika halutulla välillä
+    // UUSI: Lasketaan kesto samalla kaavalla kuin muuallakin, jotta kaikki on synkassa
+    val travelDuration = remember(letterId) {
+        TravelTimeCalculator.getTravelDuration(letterId).toFloat()
+    }
+
+    // Tässä on avain: Lasketaan progress kellonajan perusteella!
+    // Emme käytä Animatablea, vaan muuttuvaa tilaa joka päivittyy
+    var progress by remember { mutableStateOf(0f) }
 
     // Sijaintiluvan käsittely
     val launcher = rememberLauncherForActivityResult(
@@ -75,16 +85,20 @@ fun LetterMapScreen(
     // Joulupukin Pajakylä, Korvatunturi
     val santaPoint = GeoPoint(66.5435, 25.8481)
 
-    // Kirjeen kulkuanimaatio, aloitetaan kunnes sijainti on löytynyt
+    // Kirjeen kulkuanimaatio: Päivitetään progress kellon mukaan
     LaunchedEffect(userLocation) {
         if (userLocation != null) {
-            // Lisätty viive, ennen kuin kirje lähtee matkaan
-            kotlinx.coroutines.delay(1500)
+            val startTime = System.currentTimeMillis()
+            while (progress < 1f) {
+                val now = System.currentTimeMillis()
+                val elapsed = now - startTime
+                // Lisätään pieni "alkuviive" (esim. 1s) jotta ehditään nähdä lähtö
+                val effectiveElapsed = (elapsed - 1000).coerceAtLeast(0)
 
-            travelProgress.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = travelDuration, easing = LinearEasing)
-            )
+                progress = (effectiveElapsed / travelDuration).coerceIn(0f, 1f)
+
+                delay(16) // ~60fps
+            }
         }
     }
 
@@ -150,8 +164,8 @@ fun LetterMapScreen(
                         projection.toPixels(user, startPoint)
                         projection.toPixels(santaPoint, endPoint)
 
-                        val currentX = startPoint.x + (endPoint.x - startPoint.x) * travelProgress.value
-                        val currentY = startPoint.y + (endPoint.y - startPoint.y) * travelProgress.value
+                        val currentX = startPoint.x + (endPoint.x - startPoint.x) * progress
+                        val currentY = startPoint.y + (endPoint.y - startPoint.y) * progress
 
                         // Muutetaan pikselit takaisin GeoPointiin, jotta marker saa sijainnin
                         val currentPos = projection.fromPixels(currentX.toInt(), currentY.toInt()) as GeoPoint
@@ -191,7 +205,7 @@ fun LetterMapScreen(
                         view.overlays.add(deliveryMarker)
 
                         // Kartta seuraa kirjeen liikkumista
-                        if (travelProgress.value < 1f) {
+                        if (progress < 1f) {
                             view.controller.setCenter(currentPos)
                         }
                         if (!mapCentered) {
@@ -207,10 +221,13 @@ fun LetterMapScreen(
                 // Kirjeen kulkutila-laatikko
                 Card(
                     modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFFF3E6).copy(alpha = 0.95f)
+                    )
                 ) {
                     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (travelProgress.value < 1f) {
+                        if (progress < 1f) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -220,19 +237,41 @@ fun LetterMapScreen(
 
                                 // Prosenttilaskuri matkasta, joka muuntaa arvot 0.0-1.0 -> 0-100%
                                 Text(
-                                    text = "${(travelProgress.value * 100).toInt()} %",
+                                    text = "${(progress * 100).toInt()} %",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
 
                             LinearProgressIndicator(
-                                progress = { travelProgress.value },
+                                progress = { progress },
                                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                             )
                         } else {
-                            Text("Joulupukki sai kirjeesi!", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                            Text("Kirje kulki: ${"%.1f".format(distanceKm)} km matkan.", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "Joulupukki sai kirjeesi!",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Kirje kulki: ${"%.1f".format(distanceKm)} km matkan.",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Spacer(Modifier.height(16.dp))
+
+                            // UUSI: Nappi, jolla palataan takaisin flow-näkymään odottamaan vastausta
+                            Button(
+                                onClick = onBack,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Palaa odottamaan vastausta")
+                            }
                         }
                     }
                 }

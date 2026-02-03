@@ -1,18 +1,18 @@
 package fi.antero.satumaa.viewmodel.letter
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import fi.antero.satumaa.data.model.Letter
 import fi.antero.satumaa.data.repository.LetterRepository
 import fi.antero.satumaa.util.MathChallengeGenerator
+import fi.antero.satumaa.util.TravelTimeCalculator
 import fi.antero.satumaa.util.mapErrorToUserMessage
 import fi.antero.satumaa.util.toUserFriendlyMessage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -27,240 +27,179 @@ class LetterViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(LetterUiState())
     val uiState: StateFlow<LetterUiState> = _uiState.asStateFlow()
 
-    // Pidämme kirjaa tässä sessiossa avatuista kirjeistä varmuuden vuoksi
     private val locallyOpenedLetterIds = mutableSetOf<String>()
 
+    // Pidämme kirjaa, milloin matka päättyy (Absoluuttinen aika)
+    private var activeDeliveryTime: Long? = null
+
     init {
+        // 1. Tietokantakuuntelija
         repo.getLetters()
             .onEach { letters ->
-                val currentUiState = _uiState.value
-                val currentId = currentUiState.currentLetterId
-                val isViewMode = currentUiState.isViewMode
+                val currentId = _uiState.value.currentLetterId
 
-                // 1. PÄIVITETÄÄN AINA NYKYISEN KIRJEEN TILA (isOpened)
+                // Päivitetään avaus-tila
                 if (currentId != null) {
-                    val targetLetter = letters.find { it.id == currentId }
-                    if (targetLetter != null) {
-                        val isOpened = targetLetter.isOpened || locallyOpenedLetterIds.contains(targetLetter.id)
-
-                        if (isOpened != currentUiState.isOpened) {
+                    val target = letters.find { it.id == currentId }
+                    if (target != null) {
+                        val isOpened = target.isOpened || locallyOpenedLetterIds.contains(target.id)
+                        if (isOpened != _uiState.value.isOpened) {
                             _uiState.update { it.copy(isOpened = isOpened) }
                         }
                     }
                 }
 
-                // 2. JOS OLLAAN KATSELUTILASSA, LOPETETAAN TÄHÄN
-                if (isViewMode) return@onEach
+                if (_uiState.value.isViewMode) return@onEach
 
-                // 3. NORMAALI LOGIIKKA (UUSIN KIRJE / DRAFT)
                 val latestLetter = letters.firstOrNull()
                 if (latestLetter != null) {
-                    val currentUiStatus = currentUiState.status
-                    val isDraftMode = currentUiStatus == null
-                    val isOldFinishedLetter = latestLetter.status == "replied" || latestLetter.status == "error"
-
-                    if (isDraftMode && isOldFinishedLetter) {
-                        return@onEach
-                    }
-
-                    // Asetetaan ID ja tila
-                    val isLetterOpened = latestLetter.isOpened || locallyOpenedLetterIds.contains(latestLetter.id)
-
-                    if (currentId == null || currentId == latestLetter.id) {
+                    // Asetetaan ID jos puuttuu
+                    if (_uiState.value.currentLetterId == null) {
                         _uiState.update { it.copy(currentLetterId = latestLetter.id) }
                     }
 
-                    val shouldUpdate = if (latestLetter.status == "replying") {
-                        true
-                    } else if (latestLetter.status == "replied") {
-                        currentUiStatus == "replying"
-                    } else if (latestLetter.status == "error") {
-                        currentUiStatus == "replying"
-                    } else {
-                        false
+                    // Lasketaan matka-aika kerran, jos sitä ei ole
+                    if (activeDeliveryTime == null && latestLetter.status == "replying") {
+                        val createdAt = latestLetter.createdAt?.toDate()?.time ?: System.currentTimeMillis()
+                        activeDeliveryTime = TravelTimeCalculator.getDeliveryTime(latestLetter.id, createdAt)
                     }
 
-                    if (shouldUpdate) {
-                        val shouldNotify = (currentUiStatus != "replied" && latestLetter.status == "replied")
-
-                        if (latestLetter.status == "error") {
-                            _uiState.update { state ->
-                                state.copy(
-                                    status = "error",
-                                    isSending = false,
-                                    error = latestLetter.errorMessage.mapErrorToUserMessage(),
-                                    sentText = latestLetter.letterText,
-                                    isOpened = isLetterOpened
-                                )
-                            }
-                        } else {
-                            _uiState.update { state ->
-                                state.copy(
-                                    status = latestLetter.status,
-                                    replyText = latestLetter.replyText,
-                                    sentText = latestLetter.letterText,
-                                    error = null,
-                                    showReplyArrived = shouldNotify,
-                                    isOpened = isLetterOpened
-                                )
-                            }
-                        }
-                    }
-
-                    if (latestLetter.status == "replying") {
-                        delay(4000)
-                        repo.refreshLetters()
+                    // Prosessoidaan tila
+                    if (_uiState.value.currentLetterId == latestLetter.id) {
+                        processLetterState(latestLetter)
                     }
                 }
             }
             .launchIn(viewModelScope)
 
+        // 2. Sydämenlyönti: Tarkistaa kelloa ja pakottaa päivityksen jos aika on täysi
+        // mutta data puuttuu.
+        viewModelScope.launch {
+            while (true) {
+                delay(1000)
+                checkTimeAndRefreshIfNeeded()
+            }
+        }
+
         refresh()
     }
 
-    // --- MATEMATIIKKA LOGIIKKA ---
+    private fun checkTimeAndRefreshIfNeeded() {
+        val endTime = activeDeliveryTime ?: return
+        val now = System.currentTimeMillis()
 
-    fun showMathChallenge() {
-        _uiState.update {
-            it.copy(
-                isMathDialogVisible = true,
-                mathChallenge = MathChallengeGenerator.generateChallenge(),
-                mathError = false
-            )
-        }
-    }
+        // Jos aika on kulunut umpeen...
+        if (now >= endTime) {
+            val currentStatus = _uiState.value.status
+            val currentText = _uiState.value.replyText
 
-    fun dismissMathChallenge() {
-        _uiState.update { it.copy(isMathDialogVisible = false, mathError = false) }
-    }
+            // Jos status on yhä replying TAI status on replied mutta teksti puuttuu
+            // -> Pakotetaan haku palvelimelta
+            if (currentStatus == "replying" || currentText.isNullOrBlank()) {
+                refresh()
+            }
 
-    fun submitMathAnswer(answerString: String) {
-        val challenge = _uiState.value.mathChallenge ?: return
-        // Poistetaan mahdolliset välilyönnit
-        val userAnswer = answerString.trim().toIntOrNull()
-
-        if (userAnswer == challenge.correctAnswer) {
-            // Oikein meni -> Suljetaan dialogi ja avataan kirje
-            dismissMathChallenge()
-            markLetterAsOpened()
-        } else {
-            // Väärin -> Näytetään virhe
-            _uiState.update { it.copy(mathError = true) }
-        }
-    }
-
-    // ----------------------------
-
-    fun markLetterAsOpened() {
-        val currentId = uiState.value.currentLetterId ?: return
-
-        // 1. Optimistinen päivitys heti
-        _uiState.update { it.copy(isOpened = true) }
-        locallyOpenedLetterIds.add(currentId)
-
-        viewModelScope.launch {
-            repo.markAsOpened(currentId)
-
-            // 2. Varmistus: Haetaan kirje heti kannasta päivityksen jälkeen
-            val updatedLetter = repo.getLetterById(currentId)
-            if (updatedLetter != null && updatedLetter.isOpened) {
-                _uiState.update { it.copy(isOpened = true) }
+            // Päivitetään UI:n tila heti ajan perusteella
+            val currentId = _uiState.value.currentLetterId ?: return
+            viewModelScope.launch {
+                val letter = repo.getLetterById(currentId)
+                if (letter != null) {
+                    processLetterState(letter)
+                }
             }
         }
     }
 
+    private fun processLetterState(letter: Letter) {
+        val isOpened = letter.isOpened || locallyOpenedLetterIds.contains(letter.id)
+        val endTime = activeDeliveryTime
+        val now = System.currentTimeMillis()
+
+        var finalStatus = letter.status
+        var showArrived = false
+
+        // LOGIIKKA: "AIKA ON YLIN AUKTORITEETTI"
+
+        if (letter.status == "replied" && !isOpened) {
+            val isTimeUp = endTime != null && now >= endTime
+
+            if (!isTimeUp) {
+                // Matka on kesken (vaikka data olisi tullut)
+                finalStatus = "replying"
+            } else {
+                // Matka on ohi -> Tila on AINA replied.
+                finalStatus = "replied"
+
+                // Jos teksti puuttuu, varmistetaan että refresh pyörii (tehty checkTimeAndRefreshIfNeeded-funktiossa)
+                // Mutta emme enää pakota statusta takaisin "replying"-tilaan!
+
+                if (_uiState.value.status != "replied") {
+                    showArrived = true
+                }
+            }
+        } else if (letter.status == "replied") {
+            // Avattu
+            showArrived = false
+        }
+
+        _uiState.update {
+            it.copy(
+                status = finalStatus,
+                replyText = letter.replyText, // Voi olla null, UI hoitaa sen
+                sentText = letter.letterText,
+                isSending = false,
+                error = if (letter.status == "error") letter.errorMessage.mapErrorToUserMessage() else null,
+                showReplyArrived = if (finalStatus == "replying") false else (it.showReplyArrived || showArrived),
+                isOpened = isOpened
+            )
+        }
+    }
+
+    // --- Vakiometodit ---
+    fun showMathChallenge() { _uiState.update { it.copy(isMathDialogVisible = true, mathChallenge = MathChallengeGenerator.generateChallenge(), mathError = false) } }
+    fun dismissMathChallenge() { _uiState.update { it.copy(isMathDialogVisible = false, mathError = false) } }
+    fun submitMathAnswer(answer: String) {
+        val challenge = _uiState.value.mathChallenge ?: return
+        if (answer.trim().toIntOrNull() == challenge.correctAnswer) { dismissMathChallenge(); markLetterAsOpened() }
+        else { _uiState.update { it.copy(mathError = true) } }
+    }
+    fun markLetterAsOpened() {
+        val id = uiState.value.currentLetterId ?: return
+        _uiState.update { it.copy(isOpened = true) }
+        locallyOpenedLetterIds.add(id)
+        activeDeliveryTime = null
+        viewModelScope.launch { repo.markAsOpened(id) }
+    }
     fun loadLetter(id: String) {
         viewModelScope.launch {
             val letter = repo.getLetterById(id)
             if (letter != null) {
-                // Tarkistetaan onko avattu välimuistissa
-                val isOpened = letter.isOpened || locallyOpenedLetterIds.contains(id)
-
-                _uiState.update {
-                    it.copy(
-                        currentLetterId = letter.id,
-                        status = letter.status,
-                        text = "",
-                        sentText = letter.letterText,
-                        replyText = letter.replyText,
-                        isSending = false,
-                        error = null,
-                        isViewMode = true,
-                        isOpened = isOpened
-                    )
-                }
+                _uiState.update { it.copy(currentLetterId = letter.id, isViewMode = true) }
+                processLetterState(letter)
             }
         }
     }
-
     fun resetToNewLetter() {
-        _uiState.update { current ->
-            LetterUiState(
-                currentLetterId = null,
-                userLocation = current.userLocation,
-                distanceToSantaKm = current.distanceToSantaKm,
-                hasLocationPermission = current.hasLocationPermission,
-                isLocating = current.isLocating,
-                text = "",
-                status = null,
-                sentText = "",
-                replyText = null,
-                isViewMode = false,
-                error = null,
-                isOpened = false
-            )
-        }
+        activeDeliveryTime = null
+        _uiState.update { LetterUiState() }
     }
-
-    fun onTextChange(text: String) {
-        _uiState.update { it.copy(text = text, error = null) }
-    }
-
-    fun sendLetter(childName: String, onSuccess: () -> Unit) {
+    fun onTextChange(text: String) { _uiState.update { it.copy(text = text, error = null) } }
+    fun sendLetter(childName: String, onSuccess: (String) -> Unit) {
         val content = uiState.value.text.trim()
-        if (content.isEmpty()) {
-            _uiState.update { it.copy(error = "Kirjoita kirje ennen lähettämistä") }
-            return
-        }
-
-        _uiState.update {
-            it.copy(
-                isSending = true,
-                status = "replying",
-                error = null,
-                replyText = null,
-                isViewMode = false,
-                showReplyArrived = false,
-                isOpened = false
-            )
-        }
-
+        if (content.isEmpty()) return
+        _uiState.update { it.copy(isSending = true, status = "replying") }
         viewModelScope.launch {
             val result = repo.sendLetter(content, childName)
-
-            result.onSuccess {
-                _uiState.update { it.copy(text = "", isSending = false, usedOfflineDemo = false) }
-                repo.refreshLetters()
-                onSuccess()
+            result.onSuccess { id ->
+                val deliveryTime = TravelTimeCalculator.getDeliveryTime(id, System.currentTimeMillis())
+                activeDeliveryTime = deliveryTime
+                _uiState.update { it.copy(text = "", isSending = false) }
+                refresh()
+                onSuccess(id)
             }
-
-            result.onFailure { e ->
-                _uiState.update {
-                    it.copy(
-                        isSending = false,
-                        status = null,
-                        error = e.toUserFriendlyMessage()
-                    )
-                }
-            }
+            result.onFailure { e -> _uiState.update { it.copy(isSending = false, error = e.toUserFriendlyMessage()) } }
         }
     }
-
-    private fun refresh() {
-        viewModelScope.launch { repo.refreshLetters() }
-    }
-
-    fun consumeReplyArrived() {
-        _uiState.update { it.copy(showReplyArrived = false) }
-    }
+    private fun refresh() { viewModelScope.launch { repo.refreshLetters() } }
+    fun consumeReplyArrived() { _uiState.update { it.copy(showReplyArrived = false) } }
 }

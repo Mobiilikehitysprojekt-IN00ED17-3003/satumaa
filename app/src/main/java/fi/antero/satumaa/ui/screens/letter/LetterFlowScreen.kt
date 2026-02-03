@@ -55,7 +55,6 @@ fun LetterFlowScreen(
         isLoadingInitial = false
     }
 
-    // NÄYTÄ MATIKKADIALOGI JOS TILA ON PÄÄLLÄ
     if (state.isMathDialogVisible && state.mathChallenge != null) {
         MathChallengeDialog(
             challenge = state.mathChallenge!!,
@@ -97,269 +96,117 @@ fun LetterFlowScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            val isWritingNew = !state.isViewMode && state.status != "replied" && state.status != "replying"
             val isWaiting = state.status == "replying"
-
-            // Näytetään vastausnäkymä jos vastattu TAI katsellaan vanhaa TAI kirje on avattu
             val isReadyOrViewing = state.status == "replied" || (state.isViewMode && state.sentText.isNotEmpty()) || state.isOpened
+            val isWritingNew = !isWaiting && !isReadyOrViewing
 
-            // --- VAIHE 1: KIRJOITA UUSI KIRJE ---
             if (isWritingNew) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.Black.copy(0.5f), RoundedCornerShape(16.dp))
-                        .padding(20.dp),
+                    modifier = Modifier.fillMaxWidth().background(Color.Black.copy(0.5f), RoundedCornerShape(16.dp)).padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Kirje Joulupukille",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = StorybookPaper
-                    )
+                    Text(text = "Kirje Joulupukille", style = MaterialTheme.typography.headlineSmall, color = StorybookPaper)
                     Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = "Hei $userName! Kirjoita kirjeesi tähän ja lähetä se Korvatunturille.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = StorybookPaper.copy(alpha = 0.9f)
-                    )
+                    Text(text = "Hei $userName! Kirjoita kirjeesi tähän...", style = MaterialTheme.typography.bodyMedium, color = StorybookPaper.copy(alpha = 0.9f))
                 }
-
                 Spacer(Modifier.height(24.dp))
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.Black.copy(0.5f), RoundedCornerShape(16.dp))
-                        .padding(16.dp)
-                ) {
+                Column(modifier = Modifier.fillMaxWidth().background(Color.Black.copy(0.5f), RoundedCornerShape(16.dp)).padding(16.dp)) {
                     val maxChar = 200
-                    val charsRemaining = maxChar - state.text.length
-
                     OutlinedTextField(
                         value = state.text,
-                        onValueChange = { newText ->
-                            if (newText.length <= maxChar) {
-                                vm.onTextChange(newText)
-                            }
-                        },
+                        onValueChange = { if (it.length <= maxChar) vm.onTextChange(it) },
                         label = { Text("Rakas Joulupukki...", color = StorybookPaper.copy(0.7f)) },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 6,
                         enabled = !state.isSending,
-                        shape = RoundedCornerShape(12.dp),
-                        supportingText = {
-                            Text(
-                                text = "$charsRemaining merkkiä jäljellä",
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                                color = if (charsRemaining < 20) MaterialTheme.colorScheme.error else StorybookPaper.copy(0.7f),
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.Black.copy(alpha = 0.3f),
                             unfocusedContainerColor = Color.Black.copy(alpha = 0.3f),
-                            disabledContainerColor = Color.Black.copy(alpha = 0.2f),
                             focusedTextColor = StorybookPaper,
                             unfocusedTextColor = StorybookPaper,
-                            focusedBorderColor = StorybookPaper,
-                            unfocusedBorderColor = StorybookPaper.copy(0.5f),
-                            cursorColor = StorybookPaper
+                            cursorColor = StorybookPaper,
+                            focusedBorderColor = StorybookPaper
                         )
                     )
-
                     Spacer(Modifier.height(16.dp))
-
                     Button(
-                        onClick = {
-                            vm.sendLetter(userName, onSuccess = {
-                                onNavigate(RootRoute.LetterMap.route)
-                            })
-                        },
+                        onClick = { vm.sendLetter(userName, onSuccess = { id -> onNavigate("${RootRoute.LetterMap.route}/$id") }) },
                         enabled = state.text.trim().isNotEmpty() && !state.isSending,
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = StorybookPaper,
-                            contentColor = Color.Black
-                        )
-                    ) {
-                        Text(if (state.isSending) "Lähetetään..." else "Lähetä")
-                    }
+                        colors = ButtonDefaults.buttonColors(containerColor = StorybookPaper, contentColor = Color.Black)
+                    ) { Text(if (state.isSending) "Lähetetään..." else "Lähetä") }
                 }
             }
 
             state.error?.let { msg ->
                 Spacer(Modifier.height(16.dp))
-                ErrorView(
-                    message = msg,
-                    onRetry = {
-                        vm.sendLetter(userName, onSuccess = {
-                            onNavigate(RootRoute.LetterMap.route)
-                        })
-                    }
-                )
+                ErrorView(message = msg, onRetry = { vm.sendLetter(userName, onSuccess = { id -> onNavigate("${RootRoute.LetterMap.route}/$id") }) })
             }
 
-            // --- VAIHE 2: ODOTETAAN VASTAUSTA ---
             if (isWaiting) {
                 Spacer(Modifier.height(24.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = StorybookPaper)
                     Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = "Pukki miettii vastausta... 🎅",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = StorybookPaper
-                    )
+                    Text(text = "Pukki miettii vastausta... 🎅", style = MaterialTheme.typography.bodyLarge, color = StorybookPaper)
                 }
             }
 
-            // --- VAIHE 3: VASTAUS SAAPUI / VANHAN KIRJEEN KATSELU ---
             if (isReadyOrViewing) {
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.Black.copy(0.4f), RoundedCornerShape(16.dp))
-                        .padding(20.dp)
-                ) {
-                    Text(
-                        text = "Sinun kirjeesi:",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = StorybookPaper.copy(alpha = 0.7f)
-                    )
+                Column(modifier = Modifier.fillMaxWidth().background(Color.Black.copy(0.4f), RoundedCornerShape(16.dp)).padding(20.dp)) {
+                    Text(text = "Sinun kirjeesi:", style = MaterialTheme.typography.labelLarge, color = StorybookPaper.copy(alpha = 0.7f))
                     Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = state.sentText,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
-                        color = StorybookPaper.copy(alpha = 0.8f)
-                    )
+                    Text(text = state.sentText, style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic), color = StorybookPaper.copy(alpha = 0.8f))
                 }
-
                 Spacer(Modifier.height(16.dp))
 
-                // Tarkistetaan ENSIN onko avattu.
                 if (state.isOpened) {
-                    // A) KIRJE ON LÖYDETTY JA AVATTU
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.Black.copy(0.6f), RoundedCornerShape(16.dp))
-                            .padding(24.dp)
-                    ) {
-                        Text(
-                            text = "Pukin vastaus:",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = StorybookPaper
-                        )
-
+                    Column(modifier = Modifier.fillMaxWidth().background(Color.Black.copy(0.6f), RoundedCornerShape(16.dp)).padding(24.dp)) {
+                        Text(text = "Pukin vastaus:", style = MaterialTheme.typography.titleMedium, color = StorybookPaper)
                         Spacer(Modifier.height(12.dp))
 
-                        Text(
-                            text = state.replyText ?: "Kiitos kirjeestäsi! (Vastaustekstiä ei voitu ladata)",
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
-                            color = StorybookPaper
-                        )
+                        // UUSI: LATAUSINDIKAATTORI TEKSTILLE
+                        if (state.replyText.isNullOrBlank()) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = StorybookPaper, strokeWidth = 2.dp)
+                                Spacer(Modifier.width(12.dp))
+                                Text("Avataan kirjettä...", color = StorybookPaper)
+                            }
+                        } else {
+                            Text(text = state.replyText!!, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp), color = StorybookPaper)
+                        }
                     }
                 } else if (!state.replyText.isNullOrEmpty() || state.status == "replied") {
-                    // B) KIRJE ON SAAPUNUT MUTTA SULJETTU (DUMMY)
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(StorybookPaper.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
-                            .padding(32.dp),
+                        modifier = Modifier.fillMaxWidth().background(StorybookPaper.copy(alpha = 0.1f), RoundedCornerShape(16.dp)).padding(32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = "📩",
-                            style = MaterialTheme.typography.displayLarge
-                        )
+                        Text(text = "📩", style = MaterialTheme.typography.displayLarge)
                         Spacer(Modifier.height(16.dp))
-                        Text(
-                            text = "Sinulle on saapunut vastaus!",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = StorybookPaper
-                        )
-                        Text(
-                            text = "Se on piilotettu huoneeseesi.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = StorybookPaper.copy(alpha = 0.8f)
-                        )
+                        Text(text = "Sinulle on saapunut vastaus!", style = MaterialTheme.typography.titleMedium, color = StorybookPaper)
                         Spacer(Modifier.height(32.dp))
-
-                        // NAPPI 1: Etsi AR-kameralla
-                        Button(
-                            onClick = {
-                                val id = state.currentLetterId
-                                if (id != null) {
-                                    onNavigate("${LetterRoutes.CAMERA}/$id")
-                                } else {
-                                    onNavigate(LetterRoutes.CAMERA)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = StorybookPaper,
-                                contentColor = Color.Black
-                            )
-                        ) {
-                            Text("Etsi ja avaa kirje (AR)")
-                        }
-
-                        // --- EROTIN ---
+                        Button(onClick = {
+                            val id = state.currentLetterId
+                            if (id != null) onNavigate("${LetterRoutes.CAMERA}/$id") else onNavigate(LetterRoutes.CAMERA)
+                        }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = StorybookPaper, contentColor = Color.Black)) { Text("Etsi ja avaa kirje (AR)") }
                         Spacer(Modifier.height(12.dp))
-
-                        Text(
-                            text = "Tai",
-                            color = StorybookPaper.copy(alpha = 0.9f),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-
+                        Text(text = "Tai", color = StorybookPaper.copy(alpha = 0.9f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(12.dp))
-
-                        // NAPPI 2: Avaa tehtävällä
-                        Button(
-                            onClick = { vm.showMathChallenge() },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = StorybookPaper,
-                                contentColor = Color.Black
-                            )
-                        ) {
-                            Text("Avaa ratkaisemalla tehtävä 🧮")
-                        }
+                        Button(onClick = { vm.showMathChallenge() }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = StorybookPaper, contentColor = Color.Black)) { Text("Avaa ratkaisemalla tehtävä 🧮") }
                     }
-
                 } else if (state.isViewMode) {
-                    Text(
-                        text = "Pukki lukee vielä kirjettäsi...",
-                        color = StorybookPaper,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Text(text = "Pukki lukee vielä kirjettäsi...", color = StorybookPaper, style = MaterialTheme.typography.bodyLarge)
                 }
 
                 Spacer(Modifier.height(24.dp))
-                OutlinedButton(
-                    onClick = {
-                        vm.resetToNewLetter()
-                        onNavigate(RootRoute.Letter.route)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = StorybookPaper),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(StorybookPaper))
-                ) {
-                    Text("Kirjoita uusi kirje")
-                }
-
+                OutlinedButton(onClick = { vm.resetToNewLetter(); onNavigate(RootRoute.Letter.route) }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.outlinedButtonColors(contentColor = StorybookPaper), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(StorybookPaper))) { Text("Kirjoita uusi kirje") }
                 Spacer(Modifier.height(32.dp))
             }
         }
     }
 }
 
-// Matematiikka-dialogi
+// ... MathChallengeDialog pysyy samana ...
 @Composable
 fun MathChallengeDialog(
     challenge: MathChallenge,
@@ -374,45 +221,20 @@ fun MathChallengeDialog(
         containerColor = StorybookPaper,
         titleContentColor = Color(0xFF1B1B1F),
         textContentColor = Color(0xFF1B1B1F),
-        title = {
-            Text(
-                "Pukin pulmatehtävä",
-                fontWeight = FontWeight.Bold
-            )
-        },
+        title = { Text("Pukin pulmatehtävä", fontWeight = FontWeight.Bold) },
         text = {
             Column {
-                Text(
-                    "Avaa kirje ratkaisemalla tämä lasku:",
-                    fontSize = 16.sp
-                )
+                Text("Avaa kirje ratkaisemalla tämä lasku:", fontSize = 16.sp)
                 Spacer(Modifier.height(16.dp))
-
-                // Tehtävä isolla
-                Text(
-                    text = challenge.question,
-                    style = MaterialTheme.typography.displaySmall,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2E6B5B) // Forest-väri
-                )
-
+                Text(text = challenge.question, style = MaterialTheme.typography.displaySmall, modifier = Modifier.align(Alignment.CenterHorizontally), fontWeight = FontWeight.Bold, color = Color(0xFF2E6B5B))
                 Spacer(Modifier.height(16.dp))
-
                 OutlinedTextField(
                     value = answer,
-                    onValueChange = {
-                        // Hyväksytään vain numerot, max 3 merkkiä
-                        if (it.length <= 3 && it.all { char -> char.isDigit() }) {
-                            answer = it
-                        }
-                    },
+                    onValueChange = { if (it.length <= 3 && it.all { char -> char.isDigit() }) answer = it },
                     label = { Text("Vastaus") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     isError = isError,
-                    supportingText = if (isError) { { Text("Hups! Yritä uudelleen.") } } else null,
-                    modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFF2E6B5B),
                         focusedLabelColor = Color(0xFF2E6B5B),
@@ -423,26 +245,10 @@ fun MathChallengeDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = { onSubmit(answer) },
-                enabled = answer.isNotEmpty(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2E6B5B),
-                    contentColor = Color.White
-                )
-            ) {
-                Text("Avaa kirje")
-            }
+            Button(onClick = { onSubmit(answer) }, enabled = answer.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E6B5B), contentColor = Color.White)) { Text("Avaa kirje") }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = Color(0xFF1B1B1F)
-                )
-            ) {
-                Text("Peruuta")
-            }
+            TextButton(onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF1B1B1F))) { Text("Peruuta") }
         }
     )
 }

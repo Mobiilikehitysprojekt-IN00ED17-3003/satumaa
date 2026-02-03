@@ -24,15 +24,12 @@ import fi.antero.satumaa.viewmodel.letter.LetterViewModel
 fun AppNavGraph(
     navController: NavHostController,
     startDestination: String,
-    // userName poistettu parametreista, koska hallinnoimme tilaa nyt täällä
 ) {
     val backStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry.value?.destination?.route
 
-    // Hallitaan seikkailijan nimeä täällä, jotta se säilyy navigaation aikana
     var adventurerName by remember { mutableStateOf("Seikkailija") }
 
-    // Apufunktio navigoimiseen (estää tuplanavigoinnit ja palauttaa tilan)
     val navigate: (String) -> Unit = { route ->
         navController.navigate(route) {
             launchSingleTop = true
@@ -103,7 +100,6 @@ fun AppNavGraph(
 
         // --- KIRJEET ---
 
-        // 1. Kirjeen kirjoitus ja katselu (tukee nyt letterId:tä)
         composable(
             route = RootRoute.Letter.route + "?letterId={letterId}",
             arguments = listOf(navArgument("letterId") { nullable = true })
@@ -117,7 +113,6 @@ fun AppNavGraph(
             )
         }
 
-        // 2. Vanhat kirjeet (Lista)
         composable(RootRoute.LetterList.route) {
             LetterListScreen(
                 onNavigateBack = { navController.popBackStack() },
@@ -127,18 +122,14 @@ fun AppNavGraph(
             )
         }
 
-        // 3. KAMERA (AR-ETSINTÄ) - KORJATTU REITI
-        // Ottaa nyt vastaan letterId:n, jotta tiedetään mikä kirje avataan
         composable(
             route = "${LetterRoutes.CAMERA}/{letterId}",
             arguments = listOf(navArgument("letterId") { type = NavType.StringType })
         ) { backStackEntry ->
             val letterId = backStackEntry.arguments?.getString("letterId")
 
-            // Luodaan uusi ViewModel tälle ruudulle
             val viewModel = hiltViewModel<LetterViewModel>()
 
-            // Ladataan kirje
             LaunchedEffect(letterId) {
                 if (letterId != null) {
                     viewModel.loadLetter(letterId)
@@ -147,16 +138,13 @@ fun AppNavGraph(
 
             LetterCameraScreen(
                 onFoundLetter = {
-                    // Merkitään avatuksi
                     viewModel.markLetterAsOpened()
-                    // Palataan takaisin kirjenäkymään
                     navController.popBackStack()
                 },
                 onBack = { navController.popBackStack() }
             )
         }
 
-        // Varareitti (Fallback), jos jokin kutsuu vanhaa reittiä ilman ID:tä
         composable(LetterRoutes.CAMERA) {
             val viewModel = hiltViewModel<LetterViewModel>()
             LetterCameraScreen(
@@ -168,8 +156,15 @@ fun AppNavGraph(
             )
         }
 
-        composable(RootRoute.LetterMap.route) {
-            LetterMapScreen(onBack = { navController.popBackStack() })
+        composable(
+            route = "${RootRoute.LetterMap.route}/{letterId}",
+            arguments = listOf(navArgument("letterId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val letterId = backStackEntry.arguments?.getString("letterId") ?: ""
+            LetterMapScreen(
+                letterId = letterId,
+                onBack = { navController.popBackStack() }
+            )
         }
 
         // --- PROFIILI ---
