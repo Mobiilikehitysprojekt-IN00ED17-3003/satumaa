@@ -1,10 +1,13 @@
 package fi.antero.satumaa.viewmodel.letter
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import fi.antero.satumaa.data.repository.LetterRepository
+import fi.antero.satumaa.notifications.NotificationHelper
 import fi.antero.satumaa.util.MathChallengeGenerator
 import fi.antero.satumaa.util.mapErrorToUserMessage
 import fi.antero.satumaa.util.toUserFriendlyMessage
@@ -21,7 +24,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LetterViewModel @Inject constructor(
-    private val repo: LetterRepository
+    private val repo: LetterRepository,
+    @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LetterUiState())
@@ -81,7 +85,11 @@ class LetterViewModel @Inject constructor(
                     }
 
                     if (shouldUpdate) {
+                        // ✅ notify vain kun tila vaihtuu replying -> replied
                         val shouldNotify = (currentUiStatus != "replied" && latestLetter.status == "replied")
+                        if (shouldNotify) {
+                            NotificationHelper.showSantaReplyNotification(appContext)
+                        }
 
                         if (latestLetter.status == "error") {
                             _uiState.update { state ->
@@ -136,15 +144,12 @@ class LetterViewModel @Inject constructor(
 
     fun submitMathAnswer(answerString: String) {
         val challenge = _uiState.value.mathChallenge ?: return
-        // Poistetaan mahdolliset välilyönnit
         val userAnswer = answerString.trim().toIntOrNull()
 
         if (userAnswer == challenge.correctAnswer) {
-            // Oikein meni -> Suljetaan dialogi ja avataan kirje
             dismissMathChallenge()
             markLetterAsOpened()
         } else {
-            // Väärin -> Näytetään virhe
             _uiState.update { it.copy(mathError = true) }
         }
     }
@@ -154,14 +159,12 @@ class LetterViewModel @Inject constructor(
     fun markLetterAsOpened() {
         val currentId = uiState.value.currentLetterId ?: return
 
-        // 1. Optimistinen päivitys heti
         _uiState.update { it.copy(isOpened = true) }
         locallyOpenedLetterIds.add(currentId)
 
         viewModelScope.launch {
             repo.markAsOpened(currentId)
 
-            // 2. Varmistus: Haetaan kirje heti kannasta päivityksen jälkeen
             val updatedLetter = repo.getLetterById(currentId)
             if (updatedLetter != null && updatedLetter.isOpened) {
                 _uiState.update { it.copy(isOpened = true) }
@@ -173,7 +176,6 @@ class LetterViewModel @Inject constructor(
         viewModelScope.launch {
             val letter = repo.getLetterById(id)
             if (letter != null) {
-                // Tarkistetaan onko avattu välimuistissa
                 val isOpened = letter.isOpened || locallyOpenedLetterIds.contains(id)
 
                 _uiState.update {
