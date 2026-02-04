@@ -3,10 +3,8 @@ package fi.antero.satumaa.notifications
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import fi.antero.satumaa.data.repository.LetterRepository
-import fi.antero.satumaa.util.TravelTimeCalculator
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -41,15 +39,7 @@ class ReplyNotificationWatcher @Inject constructor(
 
                 notifyJob?.cancel()
                 notifyJob = launch {
-                    val createdAtMs = newReply.createdAt?.toDate()?.time ?: System.currentTimeMillis()
-                    val deliveryTime = TravelTimeCalculator.getDeliveryTime(newReply.id, createdAtMs)
-                    val delayMs = deliveryTime - System.currentTimeMillis()
-
-                    val isTooOld = delayMs < -(5 * 60 * 1000)
-                    if (!isTooOld) {
-                        if (delayMs > 0) delay(delayMs)
-                        NotificationHelper.showSantaReplyNotification(context)
-                    }
+                    NotificationHelper.showSantaReplyNotification(context)
                 }
             }
     }
