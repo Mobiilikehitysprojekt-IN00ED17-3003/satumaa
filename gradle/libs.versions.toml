@@ -21,6 +21,7 @@ crashlyticsPlugin = "3.0.2"
 osmdroid = "6.1.20"
 ycharts = "2.1.0"
 mathparser = "5.2.1"
+runtimeSaveable = "1.10.2"
 
 [libraries]
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
@@ -78,6 +79,7 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 
 ycharts = { group = "co.yml", name = "ycharts", version.ref = "ycharts" }
 mathparser = { group = "org.mariuszgromada.math", name = "MathParser.org-mXparser", version.ref = "mathparser" }
+androidx-compose-runtime-saveable = { group = "androidx.compose.runtime", name = "runtime-saveable", version.ref = "runtimeSaveable" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
