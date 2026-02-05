@@ -5,17 +5,14 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import fi.antero.satumaa.MainActivity
 import fi.antero.satumaa.R
 
-/**
- * Hoitaa kaikki ilmoituksiin liittyvän:
- * 1) NotificationChannel (pakollinen Android 8+)
- * 2) Varsinaisen ilmoituksen näyttäminen
- */
 object NotificationHelper {
 
     const val CHANNEL_ID = "santa_replies"
@@ -30,16 +27,22 @@ object NotificationHelper {
             ).apply {
                 description = "Ilmoitukset kun Joulupukki vastaa kirjeeseen"
             }
-
             val nm = context.getSystemService(NotificationManager::class.java)
             nm.createNotificationChannel(channel)
         }
     }
 
-
-    // puhelimen ilmoitus jota klikkaamalla sovellus aukeaa
     fun showSantaReplyNotification(context: Context) {
         ensureChannel(context)
+
+        // ✅ Android 13+ vaatii luvan
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) return
+        }
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -53,7 +56,6 @@ object NotificationHelper {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            // Vaihda myöhemmin omaan pieneen ikoniiin (mieluiten monochrome)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Joulupukki vastasi 🎅")
             .setContentText("Avaa sovellus lukeaksesi vastauksen")
