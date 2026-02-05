@@ -1,6 +1,11 @@
 package fi.antero.satumaa.ui.screens.letter
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.location.Location
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -9,13 +14,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import fi.antero.satumaa.R
 import fi.antero.satumaa.util.TravelTimeCalculator
 import fi.antero.satumaa.viewmodel.letter.LetterViewModel
 import kotlinx.coroutines.delay
@@ -26,6 +35,23 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 
+fun getResizedDrawable(context: Context, drawableRes: Int, sizeDp: Int): Drawable? {
+    val sourceDrawable = ContextCompat.getDrawable(context, drawableRes) ?: return null
+    val density = context.resources.displayMetrics.density
+    val sizePx = (sizeDp * density).toInt()
+
+    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+
+    sourceDrawable.setBounds(0, 0, sizePx, sizePx)
+    sourceDrawable.draw(canvas)
+
+    return BitmapDrawable(context.resources, bitmap).apply {
+        isFilterBitmap = true
+        setAntiAlias(true)
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LetterMapScreen(
@@ -35,8 +61,10 @@ fun LetterMapScreen(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-
     val state by vm.uiState.collectAsState()
+
+    val userIcon = remember { getResizedDrawable(context, R.drawable.user_icon, 45) }
+    val santaIcon = remember { getResizedDrawable(context, R.drawable.santa_icon, 45) }
 
     LaunchedEffect(letterId) {
         vm.setActiveLetter(letterId)
@@ -109,14 +137,27 @@ fun LetterMapScreen(
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
 
             if (userGeoPoint == null) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator()
-                    Spacer(Modifier.height(12.dp))
-                    Text("Etsitään sijaintiasi...", style = MaterialTheme.typography.bodyMedium)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Image(
+                        painter = painterResource(id = R.drawable.joulupukin_kyla),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(color = Color.White)
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            text = "Etsitään sijaintiasi...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White
+                        )
+                    }
                 }
                 return@Box
             }
@@ -161,21 +202,21 @@ fun LetterMapScreen(
                     view.overlays.add(Marker(view).apply {
                         position = user
                         title = "Sinä"
+                        icon = userIcon
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     })
+
                     view.overlays.add(Marker(view).apply {
                         position = santaPoint
                         title = "Joulupukki"
+                        icon = santaIcon
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     })
 
                     val deliveryMarker = Marker(view).apply {
                         position = currentPos
                         title = "Kirje on matkalla..."
-                        icon = androidx.core.content.ContextCompat.getDrawable(
-                            context,
-                            android.R.drawable.ic_menu_send
-                        )
+                        icon = ContextCompat.getDrawable(context, android.R.drawable.ic_menu_send)
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                         val bearing = user.bearingTo(santaPoint).toFloat()
                         rotation = -bearing + 90f
