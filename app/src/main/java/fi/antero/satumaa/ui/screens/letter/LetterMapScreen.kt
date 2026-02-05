@@ -1,11 +1,17 @@
 package fi.antero.satumaa.ui.screens.letter
 
+import fi.antero.satumaa.R
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.location.Location
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -13,8 +19,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -29,6 +38,28 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import kotlin.random.Random
+
+fun getResizedDrawable(context: Context, drawableRes: Int, sizeDp: Int): Drawable? {
+    val sourceDrawable = ContextCompat.getDrawable(context, drawableRes) ?: return null
+
+    // Muunnetaan DP pikseleiksi laitteen näytön tiheyden mukaan
+    val density = context.resources.displayMetrics.density
+    val sizePx = (sizeDp * density).toInt()
+
+    // Luodaan uusi tyhjä bittikartta halutussa koossa
+    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+
+    // Asetetaan alkuperäinen kuva piirtymään tähän kokoon ja piirretään se kankaalle
+    sourceDrawable.setBounds(0, 0, sizePx, sizePx)
+    sourceDrawable.draw(canvas)
+
+    return BitmapDrawable(context.resources, bitmap).apply {
+        // Lisätään suodatus ja reunanpehmennys tarkkuuden parantamiseksi
+        isFilterBitmap = true
+        setAntiAlias(true)
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +80,8 @@ fun LetterMapScreen(
         )
     }
 
+    val userIcon = remember { getResizedDrawable(context, R.drawable.user_icon, 45) }
+    val santaIcon = remember { getResizedDrawable(context, R.drawable.santa_icon, 45) }
     // Animaatiologiikka, jossa arvo liikkuu 0.0 - 1.0 välillä
     val travelProgress = remember { Animatable(0f) }
     val travelDuration = remember { Random.nextInt(10000, 20000) } // Randomisoitu kirjeen kulkuaika halutulla välillä
@@ -79,7 +112,7 @@ fun LetterMapScreen(
     LaunchedEffect(userLocation) {
         if (userLocation != null) {
             // Lisätty viive, ennen kuin kirje lähtee matkaan
-            kotlinx.coroutines.delay(1500)
+            //kotlinx.coroutines.delay(1500)
 
             travelProgress.animateTo(
                 targetValue = 1f,
@@ -123,7 +156,9 @@ fun LetterMapScreen(
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        Box(modifier = Modifier
+            .padding(padding)
+            .fillMaxSize()) {
             if (userLocation != null) {
                 // Kartan asetuksien määritys (OpenStreetMap)
                 AndroidView(
@@ -171,11 +206,13 @@ fun LetterMapScreen(
                         view.overlays.add(Marker(view).apply {
                             position = user
                             title = "Sinä"
+                            icon = userIcon
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                         })
                         view.overlays.add(Marker(view).apply {
                             position = santaPoint
                             title = "Joulupukki"
+                            icon = santaIcon
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                         })
 
@@ -206,7 +243,9 @@ fun LetterMapScreen(
 
                 // Kirjeen kulkutila-laatikko
                 Card(
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(24.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -228,7 +267,9 @@ fun LetterMapScreen(
 
                             LinearProgressIndicator(
                                 progress = { travelProgress.value },
-                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
                             )
                         } else {
                             Text("Joulupukki sai kirjeesi!", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
@@ -237,15 +278,29 @@ fun LetterMapScreen(
                     }
                 }
             } else {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                // OMA LATAUSRUUTU PNG-KUVALLA
+                Box(modifier = Modifier.fillMaxSize()) {
+                    // PNG-taustakuva
+                    Image(
+                        painter = painterResource(id =R.drawable.joulupukin_kyla), // Vaihda tähän PNG-tiedostosi nimi
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    // Latausindikaattori ja teksti kuvan päällä
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = Color.White)
                         Spacer(Modifier.height(16.dp))
-                        Text("Etsitään sijaintiasi...", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = "Etsitään sijaintiasi...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White
+                        )
                     }
                 }
             }
