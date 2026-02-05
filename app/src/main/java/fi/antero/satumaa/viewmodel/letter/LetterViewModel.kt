@@ -47,7 +47,7 @@ class LetterViewModel @Inject constructor(
 
         viewModelScope.launch {
             while (true) {
-                delay(1000)
+                delay(250)
                 checkTimeAndRefreshIfNeeded()
             }
         }
