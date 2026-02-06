@@ -6,14 +6,12 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.firebase.auth.FirebaseAuth
 import fi.antero.satumaa.data.repository.LetterRepository
-import fi.antero.satumaa.util.TravelTimeCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -33,6 +31,10 @@ class ReplyNotificationWatcher @Inject constructor(
     private var job: Job? = null
     private var started = false
     private lateinit var appContext: Context
+
+    // ✅ PYSYVÄT (ei resetoi jokaisessa run():ssa)
+    private var lastNotifiedLetterId: String? = null
+    private val notifiedIds = linkedSetOf<String>()
 
     fun start(context: Context) {
         if (started) return
@@ -57,35 +59,51 @@ class ReplyNotificationWatcher @Inject constructor(
     }
 
     private suspend fun run(context: Context) = coroutineScope {
-        var lastRepliedLetterId: String? = null
-        var notifyJob: Job? = null
+        var primed = false
 
         authUidFlow()
             .flatMapLatest { uid ->
-                if (uid == null) flowOf(emptyList())
-                else letterRepository.getLetters()
-            }
-            .collectLatest { letters ->
-                val newReply = letters.firstOrNull { it.status == "replied" && !it.isOpened }
-                    ?: return@collectLatest
-
-                if (newReply.id == lastRepliedLetterId) return@collectLatest
-                lastRepliedLetterId = newReply.id
-
-                notifyJob?.cancel()
-                notifyJob = launch {
-                    val createdAtMs = newReply.createdAt?.toDate()?.time ?: System.currentTimeMillis()
-                    val deliveryTime = TravelTimeCalculator.getDeliveryTime(newReply.id, createdAtMs)
-                    val delayMs = deliveryTime - System.currentTimeMillis()
-
-                    val isTooOld = delayMs < -(5 * 60 * 1000)
-                    if (!isTooOld) {
-                        if (delayMs > 0) delay(delayMs)
-                        NotificationHelper.showSantaReplyNotification(context)
-                    }
+                if (uid == null) {
+                    lastNotifiedLetterId = null
+                    notifiedIds.clear()
+                    primed = false
+                    flowOf(emptyList())
+                } else {
+                    letterRepository.getLetters()
                 }
             }
+            .collectLatest { letters ->
+
+                val openedIds = letters.filter { it.isOpened }.map { it.id }.toSet()
+                if (openedIds.isNotEmpty()) {
+                    notifiedIds.removeAll(openedIds)
+                    if (lastNotifiedLetterId in openedIds) lastNotifiedLetterId = null
+                }
+
+                val repliedUnopened = letters
+                    .asSequence()
+                    .filter { it.status == "replied" && !it.isOpened }
+                    .sortedByDescending { it.createdAt?.toDate()?.time ?: 0L }
+                    .toList()
+
+                if (!primed) {
+                    repliedUnopened.forEach { notifiedIds.add(it.id) }
+                    primed = true
+                    return@collectLatest
+                }
+
+                val candidate = repliedUnopened.firstOrNull() ?: return@collectLatest
+
+                if (candidate.id == lastNotifiedLetterId) return@collectLatest
+                if (candidate.id in notifiedIds) return@collectLatest
+
+                lastNotifiedLetterId = candidate.id
+                notifiedIds.add(candidate.id)
+
+                NotificationHelper.showSantaReplyNotification(context)
+            }
     }
+
 
     private fun authUidFlow() = callbackFlow<String?> {
         val listener = FirebaseAuth.AuthStateListener { state ->
