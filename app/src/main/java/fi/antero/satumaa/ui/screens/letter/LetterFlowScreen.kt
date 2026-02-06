@@ -38,12 +38,19 @@ import fi.antero.satumaa.util.MathChallenge
 import fi.antero.satumaa.util.PermissionUtils
 import fi.antero.satumaa.viewmodel.letter.LetterViewModel
 
+private enum class StartMode {
+    NEW_LETTER,
+    KEEP_CURRENT,
+    VIEW_LETTER
+}
+
 @Composable
 fun LetterFlowScreen(
     currentRoute: String?,
     onNavigate: (String) -> Unit,
     userName: String,
     letterId: String? = null,
+    mode: String? = null,
     vm: LetterViewModel
 ) {
     val context = LocalContext.current
@@ -89,11 +96,32 @@ fun LetterFlowScreen(
         }
     }
 
-    LaunchedEffect(letterId) {
-        if (letterId != null) {
-            vm.loadLetter(letterId)
-        } else {
-            vm.exitViewMode()
+    // Mode-parsinta:
+    // - mode=new  => pakota tyhjä kirjoitus
+    // - mode=view => lataa letterId (kirjasto / deep link)
+    // - mode puuttuu => KEEP_CURRENT (tärkeä: popBackStack-paluu ei resetoidu)
+    val startMode = remember(mode, letterId) {
+        when {
+            mode == "new" -> StartMode.NEW_LETTER
+            mode == "view" -> StartMode.VIEW_LETTER
+            letterId != null -> StartMode.VIEW_LETTER
+            else -> StartMode.KEEP_CURRENT
+        }
+    }
+
+    // Tässä on se varsinainen “korjaus”: EI resetoida uuteen kirjeeseen,
+    // kun palataan esim. AR-/matikkaruudusta (mode puuttuu -> KEEP_CURRENT).
+    LaunchedEffect(letterId, startMode) {
+        when (startMode) {
+            StartMode.VIEW_LETTER -> {
+                if (letterId != null) vm.loadLetter(letterId)
+            }
+            StartMode.NEW_LETTER -> {
+                vm.beginNewLetter()
+            }
+            StartMode.KEEP_CURRENT -> {
+                Unit
+            }
         }
     }
 
@@ -107,18 +135,15 @@ fun LetterFlowScreen(
     }
 
     val showEnableLocationDialog = !state.isViewMode && state.hasLocationPermission && !state.isLocationEnabled
-
     if (showEnableLocationDialog) {
         AlertDialog(
             onDismissRequest = { },
             title = { Text("Sijainti pois päältä") },
             text = { Text("Ota sijainti (GPS) käyttöön, jotta kartta toimii.") },
             confirmButton = {
-                Button(
-                    onClick = {
-                        context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                    }
-                ) { Text("Avaa asetukset") }
+                Button(onClick = { context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)) }) {
+                    Text("Avaa asetukset")
+                }
             },
             dismissButton = {
                 TextButton(onClick = { onNavigate(RootRoute.Menu.route) }) { Text("Takaisin") }
@@ -167,9 +192,7 @@ fun LetterFlowScreen(
                         onClick = { permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION) },
                         colors = ButtonDefaults.buttonColors(containerColor = StorybookPaper, contentColor = Color.Black),
                         modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Salli sijainti")
-                    }
+                    ) { Text("Salli sijainti") }
                 }
                 Spacer(Modifier.height(16.dp))
             } else if (state.isLocating && state.userLocation == null) {
@@ -189,7 +212,11 @@ fun LetterFlowScreen(
 
             val isWritingNew = !state.isViewMode && state.isNewLetterMode
             val isWaiting = !state.isViewMode && !state.isNewLetterMode && state.status == "replying"
-            val isReadyOrViewing = !state.isNewLetterMode && (state.status == "replied" || (state.isViewMode && state.sentText.isNotEmpty()) || state.isOpened)
+            val isReadyOrViewing = !state.isNewLetterMode && (
+                    state.status == "replied" ||
+                            (state.isViewMode && state.sentText.isNotEmpty()) ||
+                            state.isOpened
+                    )
 
             if (isWritingNew) {
                 Column(
@@ -199,9 +226,9 @@ fun LetterFlowScreen(
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = "Kirje Joulupukille", style = MaterialTheme.typography.headlineSmall, color = StorybookPaper)
+                    Text("Kirje Joulupukille", style = MaterialTheme.typography.headlineSmall, color = StorybookPaper)
                     Spacer(Modifier.height(8.dp))
-                    Text(text = "Hei $userName! Kirjoita kirjeesi tähän...", style = MaterialTheme.typography.bodyMedium, color = StorybookPaper.copy(alpha = 0.9f))
+                    Text("Hei $userName! Kirjoita kirjeesi tähän...", style = MaterialTheme.typography.bodyMedium, color = StorybookPaper.copy(alpha = 0.9f))
                 }
 
                 Spacer(Modifier.height(24.dp))
@@ -266,7 +293,7 @@ fun LetterFlowScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = StorybookPaper)
                     Spacer(Modifier.height(16.dp))
-                    Text(text = "Pukki miettii vastausta... 🎅", style = MaterialTheme.typography.bodyLarge, color = StorybookPaper)
+                    Text("Pukki miettii vastausta... 🎅", style = MaterialTheme.typography.bodyLarge, color = StorybookPaper)
                 }
             }
 
@@ -277,9 +304,9 @@ fun LetterFlowScreen(
                         .background(Color.Black.copy(0.4f), RoundedCornerShape(16.dp))
                         .padding(20.dp)
                 ) {
-                    Text(text = "Sinun kirjeesi:", style = MaterialTheme.typography.labelLarge, color = StorybookPaper.copy(alpha = 0.7f))
+                    Text("Sinun kirjeesi:", style = MaterialTheme.typography.labelLarge, color = StorybookPaper.copy(alpha = 0.7f))
                     Spacer(Modifier.height(8.dp))
-                    Text(text = state.sentText, style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic), color = StorybookPaper.copy(alpha = 0.8f))
+                    Text(state.sentText, style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic), color = StorybookPaper.copy(alpha = 0.8f))
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -291,7 +318,7 @@ fun LetterFlowScreen(
                             .background(Color.Black.copy(0.6f), RoundedCornerShape(16.dp))
                             .padding(24.dp)
                     ) {
-                        Text(text = "Pukin vastaus:", style = MaterialTheme.typography.titleMedium, color = StorybookPaper)
+                        Text("Pukin vastaus:", style = MaterialTheme.typography.titleMedium, color = StorybookPaper)
                         Spacer(Modifier.height(12.dp))
 
                         if (state.replyText.isNullOrBlank()) {
@@ -316,9 +343,9 @@ fun LetterFlowScreen(
                             .padding(32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = "📩", style = MaterialTheme.typography.displayLarge)
+                        Text("📩", style = MaterialTheme.typography.displayLarge)
                         Spacer(Modifier.height(16.dp))
-                        Text(text = "Sinulle on saapunut vastaus!", style = MaterialTheme.typography.titleMedium, color = StorybookPaper)
+                        Text("Sinulle on saapunut vastaus!", style = MaterialTheme.typography.titleMedium, color = StorybookPaper)
                         Spacer(Modifier.height(32.dp))
 
                         Button(
@@ -331,7 +358,7 @@ fun LetterFlowScreen(
                         ) { Text("Etsi ja avaa kirje (AR)") }
 
                         Spacer(Modifier.height(12.dp))
-                        Text(text = "Tai", color = StorybookPaper.copy(alpha = 0.9f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("Tai", color = StorybookPaper.copy(alpha = 0.9f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(12.dp))
 
                         Button(
@@ -341,15 +368,16 @@ fun LetterFlowScreen(
                         ) { Text("Avaa ratkaisemalla tehtävä 🧮") }
                     }
                 } else if (state.isViewMode) {
-                    Text(text = "Pukki lukee vielä kirjettäsi...", color = StorybookPaper, style = MaterialTheme.typography.bodyLarge)
+                    Text("Pukki lukee vielä kirjettäsi...", color = StorybookPaper, style = MaterialTheme.typography.bodyLarge)
                 }
 
                 Spacer(Modifier.height(24.dp))
 
                 OutlinedButton(
                     onClick = {
+                        // Tässä haluat oikeasti uuden kirjeen, joten navigoidaan mode=new
                         vm.beginNewLetter()
-                        onNavigate(RootRoute.Letter.route)
+                        onNavigate(RootRoute.Letter.route + "?mode=new")
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = StorybookPaper),
@@ -362,7 +390,7 @@ fun LetterFlowScreen(
             if (!state.isViewMode && !state.isNewLetterMode && state.currentLetterId == null && state.status == null) {
                 Spacer(Modifier.height(12.dp))
                 Button(
-                    onClick = { vm.beginNewLetter() },
+                    onClick = { onNavigate(RootRoute.Letter.route + "?mode=new") },
                     colors = ButtonDefaults.buttonColors(containerColor = StorybookPaper, contentColor = Color.Black),
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Kirjoita uusi kirje") }
@@ -400,7 +428,7 @@ fun MathChallengeDialog(
                 Spacer(Modifier.height(16.dp))
                 OutlinedTextField(
                     value = answer,
-                    onValueChange = { if (it.length <= 3 && it.all { char -> char.isDigit() }) answer = it },
+                    onValueChange = { if (it.length <= 3 && it.all { c -> c.isDigit() }) answer = it },
                     label = { Text("Vastaus") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
