@@ -32,25 +32,20 @@ class ReplyNotificationWatcher @Inject constructor(
     private var started = false
     private lateinit var appContext: Context
 
-    // ✅ PYSYVÄT (ei resetoi jokaisessa run():ssa)
     private var lastNotifiedLetterId: String? = null
     private val notifiedIds = linkedSetOf<String>()
 
     fun start(context: Context) {
         if (started) return
         started = true
-
         appContext = context.applicationContext
         NotificationHelper.ensureChannel(appContext)
-
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     }
 
     override fun onStart(owner: LifecycleOwner) {
         if (job?.isActive == true) return
-        job = scope.launch {
-            run(appContext)
-        }
+        job = scope.launch { run(appContext) }
     }
 
     override fun onStop(owner: LifecycleOwner) {
@@ -73,7 +68,6 @@ class ReplyNotificationWatcher @Inject constructor(
                 }
             }
             .collectLatest { letters ->
-
                 val openedIds = letters.filter { it.isOpened }.map { it.id }.toSet()
                 if (openedIds.isNotEmpty()) {
                     notifiedIds.removeAll(openedIds)
@@ -100,10 +94,10 @@ class ReplyNotificationWatcher @Inject constructor(
                 lastNotifiedLetterId = candidate.id
                 notifiedIds.add(candidate.id)
 
-                NotificationHelper.showSantaReplyNotification(context)
+                // VÄLITETÄÄN ID TÄSSÄ:
+                NotificationHelper.showSantaReplyNotification(context, candidate.id)
             }
     }
-
 
     private fun authUidFlow() = callbackFlow<String?> {
         val listener = FirebaseAuth.AuthStateListener { state ->
