@@ -1,57 +1,38 @@
 package fi.antero.satumaa.ui.screens.letter
 
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.location.Location
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import fi.antero.satumaa.R
+import fi.antero.satumaa.ui.components.AppTopBar
+import fi.antero.satumaa.ui.components.letter.map.DeliveryStatusCard
+import fi.antero.satumaa.ui.components.letter.map.LetterMapOverlay
+import fi.antero.satumaa.ui.components.letter.map.MapLoadingView
 import fi.antero.satumaa.util.TravelTimeCalculator
 import fi.antero.satumaa.viewmodel.letter.LetterViewModel
 import kotlinx.coroutines.delay
-import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Polyline
 
-fun getResizedDrawable(context: Context, drawableRes: Int, sizeDp: Int): Drawable? {
-    val sourceDrawable = ContextCompat.getDrawable(context, drawableRes) ?: return null
-    val density = context.resources.displayMetrics.density
-    val sizePx = (sizeDp * density).toInt()
-
-    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
-    val canvas = android.graphics.Canvas(bitmap)
-
-    sourceDrawable.setBounds(0, 0, sizePx, sizePx)
-    sourceDrawable.draw(canvas)
-
-    return BitmapDrawable(context.resources, bitmap).apply {
-        isFilterBitmap = true
-        setAntiAlias(true)
-    }
-}
-
+/**
+ * LetterMapScreen visualisoi kirjeen matkan kartalla.
+ *
+ * Logiikka:
+ * - Laskee etäisyyden ja animaation edistymisen (progress) paikallisesti.
+ * - Käyttää alikomponentteja (LetterMapOverlay, DeliveryStatusCard) piirtämiseen.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LetterMapScreen(
@@ -63,37 +44,40 @@ fun LetterMapScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val state by vm.uiState.collectAsState()
 
-    val userIcon = remember { getResizedDrawable(context, R.drawable.user_icon, 45) }
-    val santaIcon = remember { getResizedDrawable(context, R.drawable.santa_icon, 45) }
-
+    // Asetetaan aktiivinen kirje ViewModeliin, kun sivu aukeaa
     LaunchedEffect(letterId) {
         vm.setActiveLetter(letterId)
     }
 
-    val santaPoint = GeoPoint(66.5435, 25.8481)
+    val santaPoint = GeoPoint(66.5435, 25.8481) // Korvatunturin koordinaatit (suuntaa-antava)
 
+    // Tilamuuttujat animaatiolle ja kartalle
     var mapCentered by remember { mutableStateOf(false) }
-    var progress by remember { mutableStateOf(0f) }
+    var progress by remember { mutableFloatStateOf(0f) }
 
+    // Haetaan kirjeen luontiaika ja lasketaan arvioitu saapumisaika (TravelTimeCalculatorilla)
     val createdAtMs = state.currentLetterCreatedAtMs ?: System.currentTimeMillis()
     val endTime = remember(letterId, createdAtMs) {
         TravelTimeCalculator.getDeliveryTime(letterId, createdAtMs)
     }
+    // Varmistetaan, että matka kestää ainakin hetken (1s), jotta ei tule nollalla jakoa
     val durationMs = remember(createdAtMs, endTime) {
         (endTime - createdAtMs).coerceAtLeast(1000L)
     }
 
+    // Animaatiosilmukka: Päivittää progress-muuttujaa (0.0 -> 1.0) reaaliajassa
     LaunchedEffect(letterId, createdAtMs, endTime) {
         while (true) {
             val now = System.currentTimeMillis()
             val elapsed = (now - createdAtMs).coerceAtLeast(0L)
             progress = (elapsed.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
-            delay(16)
+            delay(16) // Päivitys n. 60 kertaa sekunnissa (60fps)
         }
     }
 
     val userGeoPoint = state.userLocation?.let { GeoPoint(it.latitude, it.longitude) }
 
+    // Lasketaan etäisyys (km) paikallisesti käyttäjän ja pukin välillä
     val distanceKm = remember(userGeoPoint) {
         userGeoPoint?.let { user ->
             val results = FloatArray(1)
@@ -108,8 +92,8 @@ fun LetterMapScreen(
         } ?: 0f
     }
 
+    // MapView:n elinkaaren hallinta (estää muistivuodot ja mustat ruudut, kun sovellus menee taustalle)
     val mapView = remember { MapView(context) }
-
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -124,173 +108,35 @@ fun LetterMapScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Kirjeen matka Joulupukille") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Takaisin")
-                    }
-                }
+            AppTopBar(
+                overrideTitle = stringResource(R.string.letter_map_title),
+                showBack = true,
+                onBack = onBack
             )
         }
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
 
             if (userGeoPoint == null) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Image(
-                        painter = painterResource(id = R.drawable.joulupukin_kyla),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator(color = Color.White)
-                        Spacer(Modifier.height(16.dp))
-                        Text(
-                            text = "Etsitään sijaintiasi...",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White
-                        )
-                    }
-                }
-                return@Box
-            }
-
-            AndroidView(
-                factory = {
-                    mapView.apply {
-                        setTileSource(TileSourceFactory.MAPNIK)
-                        isVerticalMapRepetitionEnabled = false
-                        isHorizontalMapRepetitionEnabled = false
-                        Configuration.getInstance().userAgentValue = context.packageName
-                        setMultiTouchControls(true)
-                        minZoomLevel = 3.0
-                    }
-                },
-                modifier = Modifier.fillMaxSize(),
-                update = { view ->
-                    val user = userGeoPoint
-
-                    val projection = view.projection
-                    val startPoint = android.graphics.Point()
-                    val endPoint = android.graphics.Point()
-
-                    projection.toPixels(user, startPoint)
-                    projection.toPixels(santaPoint, endPoint)
-
-                    val currentX = startPoint.x + (endPoint.x - startPoint.x) * progress
-                    val currentY = startPoint.y + (endPoint.y - startPoint.y) * progress
-
-                    val currentPos = projection.fromPixels(currentX.toInt(), currentY.toInt()) as GeoPoint
-
-                    view.overlays.clear()
-
-                    val line = Polyline().apply {
-                        setPoints(listOf(user, santaPoint))
-                        outlinePaint.color = android.graphics.Color.RED
-                        outlinePaint.strokeWidth = 8f
-                        isGeodesic = false
-                    }
-                    view.overlays.add(line)
-
-                    view.overlays.add(Marker(view).apply {
-                        position = user
-                        title = "Sinä"
-                        icon = userIcon
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                    })
-
-                    view.overlays.add(Marker(view).apply {
-                        position = santaPoint
-                        title = "Joulupukki"
-                        icon = santaIcon
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                    })
-
-                    val deliveryMarker = Marker(view).apply {
-                        position = currentPos
-                        title = "Kirje on matkalla..."
-                        icon = ContextCompat.getDrawable(context, android.R.drawable.ic_menu_send)
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                        val bearing = user.bearingTo(santaPoint).toFloat()
-                        rotation = -bearing + 90f
-                    }
-                    view.overlays.add(deliveryMarker)
-
-                    if (progress < 1f) {
-                        view.controller.setCenter(currentPos)
-                    }
-
-                    if (!mapCentered) {
-                        view.controller.setZoom(7.0)
-                        view.controller.setCenter(currentPos)
-                        mapCentered = true
-                    }
-
-                    view.invalidate()
-                }
-            )
-
-            Card(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFFFF3E6).copy(alpha = 0.95f)
+                // 1. Jos sijaintia ei ole vielä saatu, näytetään latausnäkymä
+                MapLoadingView()
+            } else {
+                // 2. Kun sijainti on saatu, näytetään kartta
+                LetterMapOverlay(
+                    userGeoPoint = userGeoPoint,
+                    santaPoint = santaPoint,
+                    progress = progress,
+                    mapCentered = mapCentered,
+                    onUpdateMapCentered = { mapCentered = it }
                 )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    if (progress < 1f) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Kirje on matkalla...", style = MaterialTheme.typography.labelLarge)
-                            Text(
-                                text = "${(progress * 100).toInt()} %",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
 
-                        LinearProgressIndicator(
-                            progress = { progress },
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        )
-                    } else {
-                        Text(
-                            "Joulupukki sai kirjeesi!",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Kirje kulki: ${"%.1f".format(distanceKm)} km matkan.",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-
-                        Spacer(Modifier.height(16.dp))
-
-                        Button(
-                            onClick = onBack,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Palaa odottamaan vastausta")
-                        }
-                    }
+                // 3. Näytetään tilakortti alareunassa
+                Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                    DeliveryStatusCard(
+                        progress = progress,
+                        distanceKm = distanceKm,
+                        onBack = onBack
+                    )
                 }
             }
         }

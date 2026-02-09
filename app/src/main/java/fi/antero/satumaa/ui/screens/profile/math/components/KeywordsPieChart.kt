@@ -7,20 +7,29 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import co.yml.charts.common.model.PlotType
 import co.yml.charts.ui.piechart.charts.DonutPieChart
 import co.yml.charts.ui.piechart.models.PieChartConfig
 import co.yml.charts.ui.piechart.models.PieChartData
+import fi.antero.satumaa.R
 import fi.antero.satumaa.ui.viewmodel.stats.StatsUiState
 
 @Composable
 fun KeywordsPieChart(uiState: StatsUiState) {
     if (uiState.topKeywords.isEmpty()) return
 
-    var selectedWord by remember { mutableStateOf("Top 5") }
-    var selectedCount by remember { mutableStateOf("Klikkaa osioita") }
+    // Haetaan oletustekstit resursseista
+    val defaultCenterText = stringResource(R.string.chart_pie_center_default)
+    val defaultHintText = stringResource(R.string.chart_pie_click_hint)
+
+    var selectedWord by remember { mutableStateOf(defaultCenterText) }
+    var selectedCount by remember { mutableStateOf(defaultHintText) }
+
+    // Formatointistringi (esim. "%1$d kpl (%2$d%%)")
+    val countFormat = stringResource(R.string.chart_pie_count_format)
 
     val slices = uiState.topKeywords.map { stat ->
         PieChartData.Slice(
@@ -35,7 +44,6 @@ fun KeywordsPieChart(uiState: StatsUiState) {
         plotType = PlotType.Donut
     )
 
-    // SÄÄDETTY CONFIG: Kiinteät värit lisätty
     val pieChartConfig = PieChartConfig(
         isAnimationEnable = true,
         showSliceLabels = false,
@@ -60,18 +68,17 @@ fun KeywordsPieChart(uiState: StatsUiState) {
             contentAlignment = Alignment.Center
         ) {
             DonutPieChart(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 pieChartData = pieChartData,
                 pieChartConfig = pieChartConfig,
                 onSliceClick = { slice ->
                     selectedWord = slice.label
                     val originalStat = uiState.topKeywords.find { it.styleName == slice.label }
                     val count = originalStat?.count ?: 0
-                    selectedCount = "$count kpl (${slice.value.toInt()}%)"
+                    // Formatoidaan luku ja prosentti resurssin avulla
+                    selectedCount = String.format(countFormat, count, slice.value.toInt())
                 }
             )
-
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(

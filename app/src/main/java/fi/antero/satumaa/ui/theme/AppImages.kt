@@ -10,7 +10,8 @@ data class AppImages(
     val storyListBackground: Int = R.drawable.lampi6,
     val profileBackground: Int = R.drawable.ratsu,
     val letterBackground: Int = R.drawable.lumi,
-    val authBackground: Int = R.drawable.kohti_taikalinnaa
+    val authBackground: Int = R.drawable.kohti_taikalinnaa,
+    val santaVillageBackground: Int = R.drawable.joulupukin_kyla
 )
 
 val LocalAppImages = staticCompositionLocalOf { AppImages() }

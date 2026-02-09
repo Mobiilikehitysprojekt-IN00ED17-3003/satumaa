@@ -25,9 +25,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import fi.antero.satumaa.R
 import fi.antero.satumaa.ui.screens.profile.math.AdventurePoint
 import fi.antero.satumaa.ui.viewmodel.stats.StatsUiState
 import kotlin.math.max
@@ -39,6 +42,7 @@ fun AdventureScatterChart(uiState: StatsUiState) {
     if (uiState.adventureData.isEmpty()) return
 
     val points = uiState.adventureData
+    val context = LocalContext.current // Tarvitaan Canvasin sisällä tekstiresursseille
 
     // Tila valitulle pisteelle (näytetään info kun painetaan)
     var selectedPoint by remember { mutableStateOf<AdventurePoint?>(null) }
@@ -49,11 +53,8 @@ fun AdventureScatterChart(uiState: StatsUiState) {
     val dataMaxY = points.maxOf { it.adventureScore }
 
     val safeMaxX = max(maxX, minX + 1f)
-
-    // Nostetaan Y-akselin maksimi piste
     val safeMaxY = max(30f, ((dataMaxY.toInt() / 10) * 10 + 10).toFloat())
 
-    // BoxWithConstraints tarvitaan, jotta tiedämme leveyden (maxWidth) kosketusta varten
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
@@ -63,7 +64,6 @@ fun AdventureScatterChart(uiState: StatsUiState) {
         val widthPx = with(density) { maxWidth.toPx() }
         val heightPx = with(density) { maxHeight.toPx() }
 
-        // Asettelu-parametrit
         val leftPad = 70f
         val rightPad = 30f
         val topPad = 40f
@@ -74,7 +74,6 @@ fun AdventureScatterChart(uiState: StatsUiState) {
         val plotTop = topPad
         val plotBottom = heightPx - bottomPad
 
-        // Muunnosfunktiot (Data -> Pikselit)
         fun mapX(x: Float): Float {
             val t = (x - minX) / (safeMaxX - minX)
             return plotLeft + t * (plotRight - plotLeft)
@@ -85,13 +84,16 @@ fun AdventureScatterChart(uiState: StatsUiState) {
             return plotBottom - t * (plotBottom - plotTop)
         }
 
+        // Haetaan tekstit etukäteen Canvasia varten
+        val xLabel = stringResource(R.string.chart_word_count)
+        val yLabel = stringResource(R.string.chart_adventure_index)
+
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
                     detectTapGestures { tapOffset ->
                         val touchRadius = 50f
-
                         val closest = points.minByOrNull { p ->
                             val px = mapX(p.wordCount)
                             val py = mapY(p.adventureScore)
@@ -102,7 +104,6 @@ fun AdventureScatterChart(uiState: StatsUiState) {
                             val px = mapX(closest.wordCount)
                             val py = mapY(closest.adventureScore)
                             val dist = sqrt((px - tapOffset.x).pow(2) + (py - tapOffset.y).pow(2))
-
                             selectedPoint = if (dist < touchRadius) closest else null
                         } else {
                             selectedPoint = null
@@ -114,22 +115,19 @@ fun AdventureScatterChart(uiState: StatsUiState) {
             drawLine(Color(0xFF444444), Offset(plotLeft, plotBottom), Offset(plotRight, plotBottom), 3f)
             drawLine(Color(0xFF444444), Offset(plotLeft, plotBottom), Offset(plotLeft, plotTop), 3f)
 
-            // 2. Asteikkoviivat (Grid)
+            // 2. Asteikkoviivat
             val tickColor = Color(0x22000000)
-            val gridStep = 5f // Haluttu väli pisteissä
+            val gridStep = 5f
             val numSteps = (safeMaxY / gridStep).toInt()
 
             for (i in 1..numSteps) {
                 val yValue = i * gridStep
                 val y = mapY(yValue)
-
-
                 if (y >= plotTop) {
                     drawLine(tickColor, Offset(plotLeft, y), Offset(plotRight, y), 1f)
                 }
             }
 
-            // X-akselin pystyviivat
             for (i in 1..4) {
                 val x = plotLeft + i * (plotRight - plotLeft) / 4f
                 drawLine(tickColor, Offset(x, plotBottom), Offset(x, plotTop), 1f)
@@ -165,11 +163,11 @@ fun AdventureScatterChart(uiState: StatsUiState) {
                     textSize = 30f
                     textAlign = android.graphics.Paint.Align.CENTER
                 }
-                canvas.nativeCanvas.drawText("Sanamäärä", (plotLeft + plotRight) / 2f, size.height - 15f, p)
+                canvas.nativeCanvas.drawText(xLabel, (plotLeft + plotRight) / 2f, size.height - 15f, p)
 
                 canvas.nativeCanvas.save()
                 canvas.nativeCanvas.rotate(-90f, 25f, (plotTop + plotBottom) / 2f)
-                canvas.nativeCanvas.drawText("Seikkailuindeksi", 25f, (plotTop + plotBottom) / 2f, p)
+                canvas.nativeCanvas.drawText(yLabel, 25f, (plotTop + plotBottom) / 2f, p)
                 canvas.nativeCanvas.restore()
             }
         }
@@ -191,7 +189,11 @@ fun AdventureScatterChart(uiState: StatsUiState) {
                         color = Color.Black
                     )
                     Text(
-                        text = "Pisteet: ${point.adventureScore.toInt()} | Sanat: ${point.wordCount.toInt()}",
+                        text = stringResource(
+                            R.string.chart_points_label,
+                            point.adventureScore.toInt(),
+                            point.wordCount.toInt()
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.DarkGray
                     )

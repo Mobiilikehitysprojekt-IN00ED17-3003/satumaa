@@ -17,7 +17,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import fi.antero.satumaa.R
 import fi.antero.satumaa.ui.viewmodel.stats.StatsUiState
 import kotlin.math.max
 
@@ -28,7 +30,6 @@ fun TrendCombinedChart(uiState: StatsUiState) {
     val stats = uiState.weeklyStats
     val trendPoints = uiState.trendPoints
 
-    // Asettelu-parametrit
     val barWidth = 30.dp
     val stepX = 75.dp
     val startPadding = 80.dp
@@ -37,16 +38,17 @@ fun TrendCombinedChart(uiState: StatsUiState) {
     val bottomPadding = 70.dp
 
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-
-    // Lasketaan koko leveys datan mukaan, jotta skrollaus toimii oikein
     val contentWidth = startPadding + (stepX * stats.size) + endPadding
     val chartWidth = max(screenWidth.value, contentWidth.value).dp
 
-    // Y-akselin dynaaminen maksimiarvo pyöristettynä seuraavaan 50:een
     val maxAvg = max(uiState.maxAvgLength, 1)
     val yMax = ((maxAvg + 49) / 50) * 50
 
     val scrollState = rememberScrollState()
+
+    // Haetaan otsikot
+    val xAxisLabel = stringResource(R.string.chart_trend_xaxis)
+    val yAxisLabel = stringResource(R.string.chart_trend_yaxis)
 
     Box(
         modifier = Modifier
@@ -67,7 +69,6 @@ fun TrendCombinedChart(uiState: StatsUiState) {
             val barW = barWidth.toPx()
             val step = stepX.toPx()
 
-            // Paint-määritykset teksteille
             val axisLabelPaint = android.graphics.Paint().apply {
                 isAntiAlias = true
                 color = android.graphics.Color.DKGRAY
@@ -87,7 +88,7 @@ fun TrendCombinedChart(uiState: StatsUiState) {
                 textAlign = android.graphics.Paint.Align.CENTER
             }
 
-            // 1. Y-akselin viivat ja arvot (0..4)
+            // 1. Y-akseli
             for (i in 0..4) {
                 val value = i * (yMax / 4)
                 val y = chartBottom - (i.toFloat() / 4f) * chartHeight
@@ -109,7 +110,7 @@ fun TrendCombinedChart(uiState: StatsUiState) {
                 }
             }
 
-            // 2. Pylväät ja aikajakson labelit
+            // 2. Pylväät
             stats.forEachIndexed { index, stat ->
                 val centerX = startX + (index * step) + (step / 2f)
                 val leftX = centerX - (barW / 2f)
@@ -131,7 +132,7 @@ fun TrendCombinedChart(uiState: StatsUiState) {
                 }
             }
 
-            // 3. Trendiviiva (Line)
+            // 3. Trendiviiva
             if (trendPoints.size >= 2) {
                 val path = Path()
                 trendPoints.forEachIndexed { i, point ->
@@ -153,7 +154,7 @@ fun TrendCombinedChart(uiState: StatsUiState) {
                 )
             }
 
-            // 4. Akseliviivat (Pääakselit)
+            // 4. Akseliviivat
             drawLine(
                 color = Color.Black,
                 start = Offset(startX, chartTop),
@@ -169,25 +170,22 @@ fun TrendCombinedChart(uiState: StatsUiState) {
 
             // 5. Akseliselitteet
             drawIntoCanvas { canvas ->
-
                 val xAxisCenter = startX + (size.width - startX) / 3f
 
                 canvas.nativeCanvas.drawText(
-                    "Aika (Viikkoa)",
+                    xAxisLabel,
                     xAxisCenter,
                     h - 100f,
                     axisLabelPaint
                 )
 
-                // Y-akselin selite (Sanamäärä) pystysuunnassa
                 canvas.nativeCanvas.save()
                 val centerY = (chartTop + chartBottom) / 2f
-
                 val yLabelXLocation = 100f
 
                 canvas.nativeCanvas.rotate(-90f, yLabelXLocation, centerY)
                 canvas.nativeCanvas.drawText(
-                    "Keskimääräinen sanamäärä",
+                    yAxisLabel,
                     yLabelXLocation,
                     centerY,
                     axisLabelPaint

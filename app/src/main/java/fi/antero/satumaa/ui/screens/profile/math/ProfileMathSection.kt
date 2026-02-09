@@ -16,11 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import fi.antero.satumaa.R
 import fi.antero.satumaa.ui.screens.profile.math.components.*
 import fi.antero.satumaa.ui.viewmodel.stats.StatsViewModel
 
@@ -38,7 +40,7 @@ fun ProfileMathSection(
     ) {
         // Otsikko varjolla (Valkoinen teksti, musta varjo takaa näkyvyyden kaikilla taustoilla)
         Text(
-            text = "Tilastot & Taika",
+            text = stringResource(R.string.math_title_main),
             style = MaterialTheme.typography.headlineMedium.copy(
                 shadow = Shadow(
                     color = Color.Black.copy(alpha = 0.5f),
@@ -53,21 +55,21 @@ fun ProfileMathSection(
 
         if (uiState.isLoading) {
             Text(
-                "Lasketaan taikapölyä...",
+                stringResource(R.string.math_status_loading),
                 color = Color(0xFFFFF3E6),
                 style = MaterialTheme.typography.bodyLarge
             )
         } else if (uiState.totalStories == 0) {
             Text(
-                "Ei vielä satuja analysoitavaksi.\nLuo ensimmäinen satusi!",
+                stringResource(R.string.math_status_empty),
                 color = Color(0xFFFFF3E6),
                 textAlign = TextAlign.Center
             )
         } else {
             // 1. Aktiivisuus
             MathCard(
-                title = "Satutehtaan aktiivisuus",
-                description = "Kuinka monta satua olemme luoneet?"
+                title = stringResource(R.string.math_card_activity_title),
+                description = stringResource(R.string.math_card_activity_desc)
             ) {
                 TimeRangeSelector(
                     currentRange = timeRange,
@@ -79,21 +81,21 @@ fun ProfileMathSection(
 
             // 2. Mieltymykset
             MathCard(
-                title = "Taikasanojen voima",
-                description = "Mitkä taikasanat toistuvat useiten?"
+                title = stringResource(R.string.math_card_keywords_title),
+                description = stringResource(R.string.math_card_keywords_desc)
             ) {
                 KeywordsPieChart(uiState = uiState)
             }
 
             // 3. Kehitys
             MathCard(
-                title = "Tarinoiden pituus & Trendi",
-                description = "Kasvaako tarinoiden pituus ajan myötä?"
+                title = stringResource(R.string.math_card_trend_title),
+                description = stringResource(R.string.math_card_trend_desc)
             ) {
                 TrendCombinedChart(uiState = uiState)
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Punainen viiva = Matemaattinen trendi (PNS)",
+                    text = stringResource(R.string.math_trend_legend),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     textAlign = TextAlign.Center,
@@ -103,11 +105,11 @@ fun ProfileMathSection(
 
             // 4. Seikkailumittari
             MathCard(
-                title = "Seikkailumittari",
-                description = "Analyysi sadun pituuden ja jännityksen suhteesta"
+                title = stringResource(R.string.math_card_adventure_title),
+                description = stringResource(R.string.math_card_adventure_desc)
             ) {
                 Text(
-                    text = "Paina kuvakkeita nähdäksesi pisteet!",
+                    text = stringResource(R.string.math_adventure_tooltip),
                     style = MaterialTheme.typography.labelMedium,
                     color = Color(0xFF2E6B5B),
                     fontWeight = FontWeight.Bold,
@@ -124,13 +126,13 @@ fun ProfileMathSection(
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            text = "Miten pisteet lasketaan?",
+                            text = stringResource(R.string.math_adventure_info_title),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF1B1B1F)
                         )
                         Text(
-                            text = "Algoritmi etsii jännitystä kuvaavia sanoja (kuten lohikäärme, miekka, aarre, sankari jne) ja huutomerkkejä. Pisteet suhteutetaan sadun pituuteen.",
+                            text = stringResource(R.string.math_adventure_info_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF2A2A31),
                             lineHeight = 16.sp
@@ -141,7 +143,7 @@ fun ProfileMathSection(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "X-akseli: Sanamäärä (pituus)\nY-akseli: Seikkailuindeksi (voimakkuus)",
+                    text = stringResource(R.string.math_adventure_axis_legend),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     textAlign = TextAlign.Center,
@@ -166,7 +168,6 @@ fun MathCard(
 ) {
     Card(
         colors = CardDefaults.cardColors(
-
             containerColor = Color(0xFFFFF3E6).copy(alpha = 0.9f)
         ),
         shape = RoundedCornerShape(16.dp),

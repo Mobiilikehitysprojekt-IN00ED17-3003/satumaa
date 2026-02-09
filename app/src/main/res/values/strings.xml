@@ -1,3 +1,205 @@
 <resources>
     <string name="app_name">satumaa</string>
+
+    <string name="menu_default_user">Seikkailija</string>
+    <string name="menu_greeting">Terve, %1$s!</string>
+    <string name="menu_subtitle">Mitä taikaa tänään luodaan?</string>
+
+    <string name="menu_story_title">Lue Iltasatu</string>
+    <string name="menu_story_desc">Taikuutta jokaiseen iltaan</string>
+
+    <string name="menu_letter_title">Kirje Joulupukille</string>
+    <string name="menu_letter_desc">Lähetä terveisesi Korvatunturille</string>
+
+    <string name="auth_welcome_title">Tervetuloa Satumaahan</string>
+    <string name="auth_login_google">Jatka Google-tilillä</string>
+    <string name="auth_login_anonymous">Kokeile ilman tiliä</string>
+
+    <string name="onboarding_title">Tervetuloa seikkailuun!</string>
+    <string name="onboarding_subtitle">Kuka tänään lähtee matkaan?</string>
+    <string name="onboarding_name_label">Seikkailijan nimi</string>
+    <string name="onboarding_button_start">Aloita seikkailu</string>
+
+    <string name="profile_title">Profiili</string>
+    <string name="profile_logged_in_as">Kirjautunut käyttäjä:</string>
+    <string name="profile_no_email">Ei sähköpostia</string>
+    <string name="profile_logout">Kirjaudu ulos</string>
+
+    <string name="letter_my_letters">Omat kirjeet</string>
+    <string name="letter_new_button">Kirjoita uusi kirje</string>
+    <string name="letter_back">Takaisin</string>
+
+    <string name="letter_input_title">Kirje Joulupukille</string>
+    <string name="letter_input_greeting">Hei %1$s! Kirjoita kirjeesi tähän...</string>
+    <string name="letter_input_placeholder">Rakas Joulupukki...</string>
+    <string name="letter_input_sending">Lähetetään...</string>
+    <string name="letter_input_waiting_location">Odotetaan sijaintia...</string>
+    <string name="letter_input_send">Lähetä</string>
+
+    <string name="letter_status_thinking">Pukki miettii vastausta... 🎅</string>
+
+    <string name="letter_result_your_letter">Sinun kirjeesi:</string>
+    <string name="letter_result_santa_reply_title">Pukin vastaus:</string>
+    <string name="letter_result_opening">Avataan kirjettä...</string>
+    <string name="letter_result_arrived_title">📩</string>
+    <string name="letter_result_arrived_text">Sinulle on saapunut vastaus!</string>
+    <string name="letter_result_open_ar">Etsi ja avaa kirje (AR)</string>
+    <string name="letter_result_or">Tai</string>
+    <string name="letter_result_open_math">Avaa ratkaisemalla tehtävä 🧮</string>
+    <string name="letter_result_reading">Pukki lukee vielä kirjettäsi...</string>
+
+    <string name="letter_perm_title">Tarvitsemme sijaintiluvan</string>
+    <string name="letter_perm_desc">Sijaintia käytetään vain kirjeen karttanäkymään.</string>
+    <string name="letter_perm_button">Salli sijainti</string>
+    <string name="letter_loc_searching">Haetaan sijaintia...</string>
+    <string name="letter_loc_dialog_title">Sijainti pois päältä</string>
+    <string name="letter_loc_dialog_desc">Ota sijainti (GPS) käyttöön, jotta kartta toimii.</string>
+    <string name="letter_loc_dialog_settings">Avaa asetukset</string>
+
+    <string name="letter_math_title">Pukin pulmatehtävä</string>
+    <string name="letter_math_desc">Avaa kirje ratkaisemalla tämä lasku:</string>
+    <string name="letter_math_answer_label">Vastaus</string>
+    <string name="letter_math_open_button">Avaa kirje</string>
+    <string name="letter_math_cancel">Peruuta</string>
+
+    <string name="letter_list_title">Kirjeposti</string>
+    <string name="letter_list_empty">Postilaatikko on tyhjä.</string>
+    <string name="letter_list_delete_title">Poista kirje?</string>
+    <string name="letter_list_delete_confirm">Haluatko varmasti poistaa tämän kirjeen? Sitä ei voi palauttaa.</string>
+    <string name="letter_list_delete_action">Poista</string>
+    <string name="letter_list_cancel_action">Peruuta</string>
+    <string name="letter_list_cd_delete">Poista kirje</string>
+
+    <string name="letter_map_title">Kirjeen matka Joulupukille</string>
+    <string name="letter_map_searching_loc">Etsitään sijaintiasi...</string>
+    <string name="letter_map_on_way">Kirje on matkalla...</string>
+    <string name="letter_map_arrived_title">Joulupukki sai kirjeesi!</string>
+    <string name="letter_map_arrived_desc">Kirje kulki: %1$.1f km matkan.</string>
+    <string name="letter_map_back_button">Palaa odottamaan vastausta</string>
+    <string name="letter_map_marker_you">Sinä</string>
+    <string name="letter_map_marker_santa">Joulupukki</string>
+    <string name="letter_map_marker_letter">Kirje on matkalla...</string>
+
+    <string name="story_list_title">Omat sadut</string>
+    <string name="story_list_empty">Ei vielä satuja. Vedä alas päivittääksesi.</string>
+    <string name="story_list_delete_title">Poistetaanko satu?</string>
+    <string name="story_list_delete_confirm">Haluatko varmasti poistaa sadun \"%1$s\"? Tätä toimintoa ei voi kumota.</string>
+    <string name="story_list_delete_action">Poista</string>
+    <string name="story_list_cancel_action">Peruuta</string>
+    <string name="story_list_cd_delete">Poista satu</string>
+
+    <string name="story_create_title">Sadun Taikaa</string>
+    <string name="story_create_instruction">Kirjoita kolme taikasanaa,\nniin %1$s saa sadun!</string>
+    <string name="story_create_word_1">1. Taikasana</string>
+    <string name="story_create_word_2">2. Taikasana</string>
+    <string name="story_create_word_3">3. Taikasana</string>
+    <string name="story_create_button_magic">TAIO SATU!</string>
+    <string name="story_create_loading">Taikuutta ilmassa...</string>
+
+    <string name="story_result_save_button">Tallenna kirjahyllyyn</string>
+    <string name="story_result_discard_button">Hylkää ja tee uusi</string>
+    <string name="story_result_saved_text">✓ Tallennettu kirjahyllyyn</string>
+    <string name="story_result_new_button">Tee uusi satu</string>
+
+    <string name="story_selector_length_label">Sadun pituus</string>
+    <string name="story_length_short">Lyhyt</string>
+    <string name="story_length_normal">Normaali</string>
+    <string name="story_length_long">Pitkä</string>
+
+    <string name="story_selector_style_label">Sadun tyyli</string>
+    <string name="story_style_default">Perus</string>
+    <string name="story_style_exciting">Jännittävä</string>
+    <string name="story_style_calming">Rauhoittava</string>
+    <string name="story_style_funny">Hassu</string>
+    <string name="story_style_educational">Opettavainen</string>
+    <string name="story_style_andersen">Andersen</string>
+    <string name="story_style_grimm">Grimm</string>
+    <string name="story_style_jansson">Muumimainen</string>
+
+    <string name="loading_default_text">Taikuutta ladataan...</string>
+
+    <string name="error_title_oops">Hupsista!</string>
+    <string name="error_retry_button">Yritä uudelleen</string>
+
+    <string name="nav_home">Koti</string>
+    <string name="nav_story">Satu</string>
+    <string name="nav_letter">Kirje</string>
+    <string name="nav_profile">Profiili</string>
+
+    <string name="topbar_default_title">Satumaa</string>
+    <string name="topbar_back_cd">Takaisin</string>
+    <string name="topbar_menu_cd">Valikko</string>
+    <string name="topbar_library_default">Omat sadut</string>
+    <string name="topbar_profile_label">Profiili</string>
+
+    <string name="error_connection">Yhteysongelma. Tarkista internetyhteytesi.</string>
+    <string name="error_generic">Jotain meni pieleen. Yritä uudelleen.</string>
+    <string name="error_unknown">Tuntematon virhe.</string>
+
+    <string name="error_story_keywords_empty">Kirjoita ainakin yksi taikasana!</string>
+    <string name="error_story_not_found">Hups! Satua ei löytynyt kirjastosta.</string>
+    <string name="error_empty_response">Taikuus epäonnistui: Palvelin ei palauttanut satua.</string>
+    <string name="error_save_id_missing">Satu tallentui pilveen, mutta sen tunnistetta ei saatu.</string>
+    <string name="error_network_generic">Verkkovirhe. Tarkista, että puhelimesi on yhdistetty internetiin.</string>
+
+    <string name="error_auth_google_token">Google-kirjautuminen epäonnistui: Tunniste puuttuu.</string>
+    <string name="error_auth_google_api">Yhteys Google-tiliin epäonnistui. Yritä uudelleen.</string>
+    <string name="error_auth_user_null">Kirjautuminen epäonnistui: Käyttäjätietoja ei saatu.</string>
+    <string name="error_auth_anonymous">Pikakirjautuminen epäonnistui. Kokeile uudelleen.</string>
+
+    <string name="error_rate_limit_story">Voit taikoa vain yhden sadun minuutissa. Odota hetki.</string>
+    <string name="error_rate_limit_save">Tallennat liian nopeasti. Odota hetki.</string>
+    <string name="error_storage_full">Kirjahylly on täynnä (20/20). Poista vanhoja satuja ensin.</string>
+    <string name="error_preview_expired">Esikatselu vanhentui. Luo satu uudelleen.</string>
+    <string name="error_content_mismatch">Satu muuttui matkalla. Yritä tallennusta uudelleen.</string>
+    <string name="error_invalid_input">Tarkista syöttämäsi nimi tai aiheet.</string>
+
+    <string name="error_mailbox_full">Postilaatikko on täynnä (10/10). Poista vanhoja kirjeitä ensin.</string>
+    <string name="error_letter_too_long">Kirje on liian pitkä. Lyhennä sitä hieman.</string>
+    <string name="error_rate_limit_letter">Pukki ehtii lukea vain yhden kirjeen minuutissa.</string>
+    <string name="error_gemini_busy">Pukilla on kova kiire juuri nyt. Yritä hetken päästä uudelleen.</string>
+
+    <string name="error_auth_invalid_cred">Virheellinen sähköposti tai salasana.</string>
+    <string name="error_auth_invalid_user">Käyttäjätiliä ei löydy tai se on poistettu.</string>
+    <string name="error_auth_collision">Tällä sähköpostilla on jo tili.</string>
+    <string name="error_auth_weak_password">Salasana on liian heikko.</string>
+    <string name="error_auth_blocked">Tili on estetty väliaikaisesti liian monen yrityksen vuoksi.</string>
+    <string name="error_timeout">Pyyntö aikakatkaistiin. Palvelin vastaa hitaasti.</string>
+    <string name="error_auth_required">Toiminto vaatii kirjautumisen.</string>
+
+    <string name="math_title_main">Tilastot &amp; Taika</string>
+    <string name="math_status_loading">Lasketaan taikapölyä...</string>
+    <string name="math_status_empty">Ei vielä satuja analysoitavaksi.\nLuo ensimmäinen satusi!</string>
+
+    <string name="math_card_activity_title">Satutehtaan aktiivisuus</string>
+    <string name="math_card_activity_desc">Kuinka monta satua olemme luoneet?</string>
+
+    <string name="math_card_keywords_title">Taikasanojen voima</string>
+    <string name="math_card_keywords_desc">Mitkä taikasanat toistuvat useiten?</string>
+
+    <string name="math_card_trend_title">Tarinoiden pituus &amp; Trendi</string>
+    <string name="math_card_trend_desc">Kasvaako tarinoiden pituus ajan myötä?</string>
+    <string name="math_trend_legend">Punainen viiva = Matemaattinen trendi (PNS)</string>
+
+    <string name="math_card_adventure_title">Seikkailumittari</string>
+    <string name="math_card_adventure_desc">Analyysi sadun pituuden ja jännityksen suhteesta</string>
+
+    <string name="math_adventure_tooltip">Paina kuvakkeita nähdäksesi pisteet!</string>
+    <string name="math_adventure_info_title">Miten pisteet lasketaan?</string>
+    <string name="math_adventure_info_desc">Algoritmi etsii jännitystä kuvaavia sanoja (kuten lohikäärme, miekka, aarre, sankari jne) ja huutomerkkejä. Pisteet suhteutetaan sadun pituuteen.</string>
+    <string name="math_adventure_axis_legend">X-akseli: Sanamäärä (pituus)\nY-akseli: Seikkailuindeksi (voimakkuus)</string>
+
+    <string name="chart_word_count">Sanamäärä</string>
+    <string name="chart_adventure_index">Seikkailuindeksi</string>
+    <string name="chart_points_label">Pisteet: %1$d | Sanat: %2$d</string>
+
+    <string name="chart_pie_center_default">Top 5</string>
+    <string name="chart_pie_click_hint">Klikkaa osioita</string>
+    <string name="chart_pie_count_format">%1$d kpl (%2$d%%)</string>
+
+    <string name="chart_trend_xaxis">Aika (Viikkoa)</string>
+    <string name="chart_trend_yaxis">Keskimääräinen sanamäärä</string>
+
+    <string name="chart_bar_desc_format">%1$d satua</string>
+
 </resources>

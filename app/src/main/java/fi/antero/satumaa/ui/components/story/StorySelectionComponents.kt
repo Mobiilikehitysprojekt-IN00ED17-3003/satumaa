@@ -1,4 +1,4 @@
-package fi.antero.satumaa.ui.components.story
+/*package fi.antero.satumaa.ui.components.story
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -122,4 +122,4 @@ fun StoryStyleSelector(
             }
         }
     }
-}
+}*/

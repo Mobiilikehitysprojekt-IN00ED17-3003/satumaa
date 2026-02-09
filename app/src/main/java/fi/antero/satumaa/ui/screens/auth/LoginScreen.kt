@@ -6,16 +6,11 @@ import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -24,11 +19,21 @@ import com.google.android.gms.common.api.ApiException
 import fi.antero.satumaa.R
 import fi.antero.satumaa.ui.components.ErrorView
 import fi.antero.satumaa.ui.components.LoadingView
-import fi.antero.satumaa.ui.theme.LocalAppImages
-import fi.antero.satumaa.util.mapErrorToUserMessage // Lisätty import
+import fi.antero.satumaa.ui.components.auth.AuthBackground
+import fi.antero.satumaa.ui.components.auth.AuthHeader
+import fi.antero.satumaa.ui.components.auth.LoginButtons
+import fi.antero.satumaa.util.mapErrorToUserMessage
 import fi.antero.satumaa.viewmodel.auth.AuthUiState
 import fi.antero.satumaa.viewmodel.auth.AuthViewModel
 
+/**
+ * LoginScreen hallinnoi käyttäjän tunnistautumista.
+ *
+ * Vastuualueet:
+ * 1. Google Sign-In -prosessin käynnistys ja tulosten käsittely.
+ * 2. Ilmoituslupien pyytäminen (Android 13+).
+ * 3. UI-tilan (Loading, Error, Success) ohjaus.
+ */
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -36,8 +41,11 @@ fun LoginScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+
+    // Paikallinen tila Google Sign-In -virheille (ennen ViewModelia)
     var googleError by remember { mutableStateOf<String?>(null) }
 
+    // --- Luvat (Android 13+) ---
     val notifPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { Log.d("LoginScreen", "Notification permission: $it") }
@@ -48,6 +56,7 @@ fun LoginScreen(
         }
     }
 
+    // --- Google Sign-In Alustus ---
     val googleClientId = context.getString(R.string.default_web_client_id)
     val googleSignInClient = remember {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -57,6 +66,7 @@ fun LoginScreen(
         GoogleSignIn.getClient(context, gso)
     }
 
+    // --- Google Sign-In Tuloskäsittelijä ---
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -69,30 +79,28 @@ fun LoginScreen(
                 if (!idToken.isNullOrBlank()) {
                     viewModel.signInWithGoogle(idToken)
                 } else {
-                    // Käytetään teknistä koodia ja käännetään se
-                    googleError = "AUTH_GOOGLE_TOKEN_MISSING".mapErrorToUserMessage()
+                    // Tekninen virhe -> Käyttäjäystävällinen viesti
+                    googleError = "AUTH_GOOGLE_TOKEN_MISSING".mapErrorToUserMessage(context)
                 }
             } catch (e: ApiException) {
                 Log.e("LoginScreen", "Google Sign-In failed", e)
-                // Käytetään teknistä koodia ja käännetään se
-                googleError = "AUTH_GOOGLE_API_ERROR".mapErrorToUserMessage()
+                googleError = "AUTH_GOOGLE_API_ERROR".mapErrorToUserMessage(context)
             }
         }
     }
 
+    // --- Navigointi onnistuessa ---
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
             onLoginSuccess()
         }
     }
 
+    // --- UI Rakentaminen ---
     Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(id = LocalAppImages.current.authBackground),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+
+        // 1. Tausta
+        AuthBackground()
 
         Column(
             modifier = Modifier
@@ -100,16 +108,15 @@ fun LoginScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Asettelu: Otsikko ylhäällä, napit keskellä/alhaalla
             Spacer(modifier = Modifier.weight(3f))
 
-            Text(
-                text = "Tervetuloa Satumaahan",
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.White
-            )
+            // 2. Otsikko
+            AuthHeader()
 
             Spacer(modifier = Modifier.weight(1f))
 
+            // 3. Sisältöalue (Lataus, Virhe tai Napit)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -118,7 +125,9 @@ fun LoginScreen(
             ) {
                 when (val state = uiState) {
                     is AuthUiState.Loading -> LoadingView()
+
                     is AuthUiState.Error -> {
+                        // ViewModelin virheet (esim. Firebase-virhe)
                         ErrorView(
                             message = state.message,
                             onRetry = {
@@ -127,8 +136,12 @@ fun LoginScreen(
                             }
                         )
                     }
+
                     else -> {
+                        // Perustila: Näytetään napit ja mahdolliset Google-virheet
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+                            // Paikallinen virhe (Google API)
                             googleError?.let { msg ->
                                 ErrorView(
                                     message = msg,
@@ -136,6 +149,7 @@ fun LoginScreen(
                                     modifier = Modifier.padding(bottom = 16.dp)
                                 )
                             }
+
                             LoginButtons(
                                 onGoogleClick = {
                                     googleError = null
@@ -151,36 +165,6 @@ fun LoginScreen(
                 }
             }
             Spacer(modifier = Modifier.height(48.dp))
-        }
-    }
-}
-
-@Composable
-private fun LoginButtons(
-    onGoogleClick: () -> Unit,
-    onAnonymousClick: () -> Unit
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Button(
-            onClick = onGoogleClick,
-            modifier = Modifier.fillMaxWidth(0.8f).padding(bottom = 12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_google),
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text("Jatka Google-tilillä")
-        }
-
-        TextButton(onClick = onAnonymousClick) {
-            Text(
-                "Kokeile ilman tiliä",
-                color = Color.White.copy(alpha = 0.8f),
-                style = MaterialTheme.typography.labelLarge
-            )
         }
     }
 }

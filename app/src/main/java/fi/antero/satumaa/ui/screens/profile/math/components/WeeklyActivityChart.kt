@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import co.yml.charts.axis.AxisData
 import co.yml.charts.common.model.Point
@@ -17,6 +18,7 @@ import co.yml.charts.ui.barchart.BarChart
 import co.yml.charts.ui.barchart.models.BarChartData
 import co.yml.charts.ui.barchart.models.BarData
 import co.yml.charts.ui.barchart.models.BarStyle
+import fi.antero.satumaa.R
 import fi.antero.satumaa.ui.viewmodel.stats.StatsUiState
 import kotlin.math.max
 
@@ -26,19 +28,19 @@ fun WeeklyActivityChart(uiState: StatsUiState) {
 
     val scrollState = rememberScrollState()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-
-
     val fixedTextColor = Color(0xFF1B1B1F)
+
+    // Formatointistringi (esim. "%1$d satua")
+    val descFormat = stringResource(R.string.chart_bar_desc_format)
 
     val realBars = uiState.weeklyStats.mapIndexed { index, stat ->
         BarData(
             point = Point(x = (index + 1).toFloat(), y = stat.storyCount.toFloat()),
             color = Color(0xFF2E6B5B),
             label = stat.weekLabel,
-            description = "${stat.storyCount} satua"
+            description = String.format(descFormat, stat.storyCount)
         )
     }
-
 
     val spacerStart = BarData(
         point = Point(x = 0f, y = 0f),
@@ -55,7 +57,6 @@ fun WeeklyActivityChart(uiState: StatsUiState) {
     )
 
     val barData = listOf(spacerStart) + realBars + listOf(spacerEnd)
-
     val xSteps = max(barData.size - 1, 1)
 
     val xAxisData = AxisData.Builder()
