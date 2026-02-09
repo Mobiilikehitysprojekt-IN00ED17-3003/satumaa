@@ -12,9 +12,12 @@ import javax.inject.Inject
 /**
  * LetterFunctionsSource hallinnoi kirjeiden lähettämistä pilveen.
  *
- * Tällä hetkellä käytämme suoraa Firestore-kirjoitusta, mutta rakenne on
- * valmis siirtymään Cloud Functions -kutsuun (kuten StoryFunctionsSource),
- * jos logiikka siirretään myöhemmin backendin puolelle.
+ * Arkkitehtuurinen huomio:
+ * Vaikka luokan nimi on "FunctionsSource", tämä toteutus käyttää toistaiseksi
+ * suoraa Firestore-kommunikaatiota client-puolelta (ns. "Client-side logic").
+ * Rakenne on kuitenkin suunniteltu niin, että logiikka on helppo siirtää
+ * Cloud Functions -funktion taakse (Server-side logic) tulevaisuudessa ilman,
+ * että Repository-tasoa tarvitsee muuttaa.
  */
 class LetterFunctionsSource @Inject constructor(
     private val db: FirebaseFirestore,
@@ -22,11 +25,15 @@ class LetterFunctionsSource @Inject constructor(
 ) {
 
     /**
-     * Lähettää kirjeen Firestoreen.
+     * Lähettää uuden kirjeen Firestoreen.
      *
-     * Tarkistaa ensin:
-     * 1. Onko postilaatikko täynnä (max 10).
-     * 2. Onko edellisestä kirjeestä kulunut tarpeeksi aikaa (Rate limit).
+     * Prosessi sisältää client-side validoinnin kustannusten ja turvallisuuden optimoimiseksi:
+     * 1. **Postilaatikon koko:** Tarkistetaan, ettei käyttäjällä ole liikaa kirjeitä (max 10).
+     * Tämä tehdään `count()`-kyselyllä, joka on halpa ja nopea.
+     * 2. **Rate Limiting:** Tarkistetaan, ettei käyttäjä spämmää (max 1 kirje / min).
+     * 3. **Kirjoitus:** Jos tarkistukset menevät läpi, kirje tallennetaan.
+     *
+     * @return Result<String>: Onnistuessa uuden kirjeen ID, epäonnistuessa Exception.
      */
     suspend fun sendLetter(letterText: String, childName: String): Result<String> {
         val uid = auth.currentUser?.uid
@@ -36,6 +43,7 @@ class LetterFunctionsSource @Inject constructor(
 
         try {
             // 1. Tarkista montako kirjettä käyttäjällä on (halpa server-side count)
+            // AggregateSource.SERVER varmistaa, että laskenta tehdään palvelimella eikä ladata dokumentteja.
             val countQuery = collectionRef.count().get(AggregateSource.SERVER).await()
             if (countQuery.count >= 10) {
                 return Result.failure(Exception("MAILBOX_FULL"))
@@ -53,22 +61,24 @@ class LetterFunctionsSource @Inject constructor(
                 val lastDate = lastDoc.getTimestamp("createdAt")?.toDate()
                 if (lastDate != null) {
                     val diff = Date().time - lastDate.time
-                    if (diff < 60 * 1000) {
+                    if (diff < 60 * 1000) { // 60 sekuntia
                         return Result.failure(Exception("RATE_LIMIT_LETTER"))
                     }
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            // Jos tarkistus epäonnistuu (esim. verkkovirhe), sallimme yrityksen jatkua.
+            // Strategia: Jos esitarkistus epäonnistuu (esim. verkkovirhe), sallimme yrityksen jatkua.
+            // Firestoren Security Rules torjuu sen palvelimella, jos säännöt rikotaan.
         }
 
+        // Valmistellaan data
         val data = hashMapOf(
             "userId" to uid,
             "childName" to childName,
             "letterText" to letterText,
-            "status" to "replying",
-            "createdAt" to FieldValue.serverTimestamp()
+            "status" to "replying", // Asetetaan tila odottamaan vastausta
+            "createdAt" to FieldValue.serverTimestamp() // Palvelimen aika on luotettavin
         )
 
         return try {
@@ -76,9 +86,10 @@ class LetterFunctionsSource @Inject constructor(
             Result.success(docRef.id)
         } catch (e: Exception) {
             val msg = e.message ?: ""
-            // Firestore Security Rules -virheiden tulkinta
+            // Tulkitaan Firestore Security Rules -virheet ymmärrettävämmiksi koodeiksi
             if (msg.contains("PERMISSION_DENIED", ignoreCase = true) ||
                 msg.contains("Missing or insufficient permissions")) {
+                // Oletetaan, että sääntövirhe johtuu postilaatikon täyttymisestä (yleisin syy)
                 Result.failure(Exception("MAILBOX_FULL"))
             } else {
                 Result.failure(e)

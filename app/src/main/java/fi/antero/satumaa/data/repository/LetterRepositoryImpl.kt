@@ -20,28 +20,28 @@ import kotlinx.coroutines.flow.emptyFlow
 import javax.inject.Inject
 
 /**
- * LetterRepositoryImpl hallinnoi kirjeiden dataa.
+ * LetterRepositoryImpl toteuttaa kirjeiden hallinnan "Offline-First" -periaatteella.
  *
- * Se noudattaa "Single Source of Truth" -periaatetta:
- * 1. UI lukee aina paikallisesta Room-tietokannasta (getLetters).
- * 2. Uudet tiedot haetaan pilvestä (refreshLetters) ja tallennetaan Roomiin.
- * 3. Lähetys (sendLetter) delegoidaan RemoteSourcelle ja onnistuessa päivitetään Room.
+ * Logiikka:
+ * 1. **Single Source of Truth:** UI lukee dataa VAIN paikallisesta Room-tietokannasta (getLetters).
+ * 2. **Synkronointi:** refreshLetters hakee dataa pilvestä ja päivittää Roomia.
+ * 3. **Optimistinen päivitys:** sendLetter tallentaa kirjeen heti paikallisesti, jotta UI reagoi viiveettä.
+ * 4. **Taustatyöt:** Poistot hoidetaan WorkManagerilla varmuuden vuoksi.
  */
 class LetterRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
     private val letterDao: LetterDao,
-    private val firestoreSource: LetterFirestoreSource,
-    private val functionsSource: LetterFunctionsSource, // UUSI: Hoitaa lähetyksen
+    private val firestoreSource: LetterFirestoreSource, // Datan hakuun
+    private val functionsSource: LetterFunctionsSource, // Lähetykseen (sisältää logiikan)
     @ApplicationContext private val context: Context
 ) : LetterRepository {
 
     private val workManager by lazy { WorkManager.getInstance(context) }
 
     /**
-     * Hakee kirjeet reaktiivisena virtana (Flow).
-     * Yhdistää (combine) kaksi tietolähdettä:
-     * 1. Itse kirjeet (LetterEntity)
-     * 2. Kirjeiden paikallinen tila (LetterStateEntity), esim. onko avattu.
+     * Yhdistää kaksi tietokantataulua (letters ja letter_local_state) yhdeksi virraksi.
+     * * 'combine' on tehokas operaattori, joka kuuntelee molempia tauluja.
+     * Kun kumpikaan muuttuu, se ajaa lambda-funktion ja tuottaa uuden listan.
      */
     override fun getLetters(): Flow<List<Letter>> {
         val userId = auth.currentUser?.uid ?: return emptyFlow()
@@ -50,17 +50,20 @@ class LetterRepositoryImpl @Inject constructor(
         val statesFlow = letterDao.getAllLocalStates()
 
         return lettersFlow.combine(statesFlow) { letters, states ->
+            // Luodaan hakukartta tiloille nopeaa hakua varten (O(1))
             val stateMap = states.associate { it.letterId to it.isOpened }
 
             letters.map { letterEntity ->
+                // Haetaan tila kartasta, oletuksena false
                 val isOpened = stateMap[letterEntity.id] ?: false
 
+                // Manuaalinen mäppäys Domain-malliksi
                 Letter(
                     id = letterEntity.id,
                     userId = letterEntity.userId,
                     letterText = letterEntity.letterText,
                     status = letterEntity.status,
-                    // Timestamp-muunnokset
+                    // Muunnetaan Long (ms) -> Firebase Timestamp
                     createdAt = Timestamp(letterEntity.createdAt / 1000, ((letterEntity.createdAt % 1000) * 1000000).toInt()),
                     replyText = letterEntity.replyText,
                     repliedAt = letterEntity.repliedAt?.let { Timestamp(it / 1000, ((it % 1000) * 1000000).toInt()) },
@@ -71,7 +74,7 @@ class LetterRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Hakee yksittäisen kirjeen suoraan Roomista.
+     * Hakee yksittäisen kirjeen suoraan tietokannasta ilman Flow'ta.
      */
     override suspend fun getLetterById(id: String): Letter? {
         val entity = letterDao.getLetterEntityById(id) ?: return null
@@ -91,7 +94,8 @@ class LetterRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Hakee uusimmat kirjeet pilvestä ja päivittää paikallisen tietokannan.
+     * Hakee kirjeet pilvestä ja tallentaa ne paikalliseen tietokantaan.
+     * Roomin 'OnConflictStrategy.REPLACE' hoitaa päivityksen.
      */
     override suspend fun refreshLetters() {
         val dtos = firestoreSource.getUserLetters()
@@ -102,8 +106,11 @@ class LetterRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Lähettää uuden kirjeen Joulupukille.
-     * Delegoi varsinaisen verkkokutsun LetterFunctionsSourcelle.
+     * Lähettää kirjeen.
+     * * 1. Tarkistaa verkkoyhteyden.
+     * 2. Kutsuu FunctionsSourcea (validointi + tallennus).
+     * 3. Onnistuessa tallentaa kirjeen heti paikalliseen kantaan ("Optimistic Update"),
+     * jolloin se ilmestyy UI:han välittömästi ilman verkkolatausta.
      */
     override suspend fun sendLetter(letterText: String, childName: String): Result<String> {
         val uid = auth.currentUser?.uid
@@ -113,10 +120,8 @@ class LetterRepositoryImpl @Inject constructor(
             return Result.failure(Exception("NETWORK_ERROR"))
         }
 
-        // Kutsutaan Remote Sourcea (pilvitallennus)
         val result = functionsSource.sendLetter(letterText, childName)
 
-        // Jos onnistui, tallennetaan heti paikallisesti (Optimistic UI update)
         result.onSuccess { docId ->
             val newLetterEntity = LetterEntity(
                 id = docId,
@@ -136,7 +141,9 @@ class LetterRepositoryImpl @Inject constructor(
 
     /**
      * Poistaa kirjeen.
-     * Poistaa ensin paikallisesti ja asettaa taustatyön (Worker) poistamaan pilvestä.
+     * * 1. Poistaa heti paikallisesti (UI päivittyy).
+     * 2. Aikatauluttaa WorkManager-työn poistamaan kirjeen pilvestä.
+     * Tämä varmistaa poiston, vaikka sovellus suljettaisiin tai verkko katkeaisi.
      */
     override suspend fun deleteLetter(letterId: String) {
         letterDao.deleteLetter(letterId)
@@ -152,6 +159,7 @@ class LetterRepositoryImpl @Inject constructor(
         letterDao.markAsOpened(id)
     }
 
+    // Apufunktio verkon tilan tarkistukseen
     private fun isOnline(): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false

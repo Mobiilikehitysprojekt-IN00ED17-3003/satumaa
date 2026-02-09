@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import fi.antero.satumaa.data.model.Story
 import fi.antero.satumaa.data.repository.StoryRepository
 import fi.antero.satumaa.ui.components.story.create.StoryLength
 import fi.antero.satumaa.ui.components.story.create.StoryStyle
@@ -16,26 +17,33 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * StoryViewModel hallinnoi sadun luomiseen, tallentamiseen ja hakemiseen liittyvää logiikkaa.
- * Se toimii välikätenä UI:n ja Repositoryn välillä.
+ * StoryViewModel hallinnoi yksittäiseen satuun liittyvää logiikkaa.
+ *
+ * Käyttötapaukset:
+ * 1. Uuden sadun luonti tekoälyllä (Generate).
+ * 2. Generoidun sadun esikatselu ja tallennus (Save).
+ * 3. Olemassa olevan sadun avaaminen luettavaksi (Load).
  */
 @HiltViewModel
 class StoryViewModel @Inject constructor(
     private val repository: StoryRepository,
+    // Injektoidaan Application Context, jotta voimme kääntää virheilmoitukset
+    // (R.string...) suoraan ViewModelissa ErrorUtilsin avulla.
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    // UI-tila (Idle, Loading, Success, Error)
+    // UI-tila (Idle, Loading, Success, Error).
+    // Käytämme StateFlowta, jotta Compose-näkymä päivittyy reaktiivisesti.
     private val _uiState = MutableStateFlow<StoryUiState>(StoryUiState.Idle)
     val uiState: StateFlow<StoryUiState> = _uiState.asStateFlow()
 
     /**
      * Käynnistää sadun luonnin tekoälyllä.
      *
-     * @param childName Lapsen nimi (tai kenelle satu luodaan).
+     * @param childName Lapsen nimi.
      * @param word1-3 Taikasanat.
-     * @param length Sadun pituus (Enum).
-     * @param style Sadun tyyli (Enum).
+     * @param length Sadun pituus.
+     * @param style Sadun tyyli.
      */
     fun generateStory(
         childName: String,
@@ -46,19 +54,18 @@ class StoryViewModel @Inject constructor(
         style: StoryStyle
     ) {
         viewModelScope.launch {
-            // Siistitään syötteet
+            // 1. Siivotaan syötteet (poistetaan tyhjät välilyönnit)
             val keywords = listOf(word1, word2, word3).map { it.trim() }.filter { it.isNotEmpty() }
 
-            // Tarkistetaan, onko avainsanoja
+            // 2. Validointi: Vaaditaan vähintään yksi taikasana
             if (keywords.isEmpty()) {
-                // Käytetään teknistä virhekoodia, jonka ErrorUtils kääntää käyttäjäystävälliseksi
                 _uiState.value = StoryUiState.Error(Exception("STORY_KEYWORDS_EMPTY").toUserFriendlyMessage(context))
                 return@launch
             }
 
             _uiState.value = StoryUiState.Loading
 
-            // Kutsutaan repositorya (käytetään Enumin apiValue-kenttää)
+            // 3. Kutsutaan repositorya (Cloud Functions)
             val result = repository.generateStoryPreview(
                 childName = childName,
                 keywords = keywords,
@@ -66,9 +73,12 @@ class StoryViewModel @Inject constructor(
                 style = style.apiValue
             )
 
+            // 4. Käsitellään tulos
             result.onSuccess { previewStory ->
+                // Onnistui: Näytetään esikatselu (Success-tila)
                 _uiState.value = StoryUiState.Success(previewStory)
             }.onFailure { e ->
+                // Epäonnistui: Käännetään virhe suomeksi ja näytetään käyttäjälle
                 _uiState.value = StoryUiState.Error(e.toUserFriendlyMessage(context))
             }
         }
@@ -76,21 +86,22 @@ class StoryViewModel @Inject constructor(
 
     /**
      * Tallentaa nykyisen esikatselussa olevan sadun tietokantaan.
-     * Jos satu on jo tallennettu (sillä on ID), toimintoa ei suoriteta uudestaan.
      */
     fun saveCurrentStory() {
         val currentState = _uiState.value
+
+        // Varmistetaan, että meillä on onnistuneesti generoitu satu
         if (currentState is StoryUiState.Success) {
             val storyToSave = currentState.story
 
-            // Estetään duplikaattitallennus
+            // Estetään tuplatallennus: Jos sadulla on jo ID, se on jo tallennettu.
             if (storyToSave.id.isNotEmpty()) return
 
             viewModelScope.launch {
                 val result = repository.saveStory(storyToSave)
 
                 result.onSuccess { newId ->
-                    // Päivitetään tilaan tallennettu satu uudella ID:llä
+                    // Päivitetään UI-tilaan tallennettu versio (jolla on nyt ID)
                     val savedStory = storyToSave.copy(id = newId)
                     _uiState.value = StoryUiState.Success(savedStory)
                 }.onFailure { e ->
@@ -101,7 +112,7 @@ class StoryViewModel @Inject constructor(
     }
 
     /**
-     * Hakee yksittäisen sadun katselua varten (esim. listasta klikatessa).
+     * Hakee yksittäisen sadun katselua varten (esim. kun listasta klikataan).
      */
     fun loadStory(storyId: String) {
         viewModelScope.launch {
@@ -120,7 +131,7 @@ class StoryViewModel @Inject constructor(
     }
 
     /**
-     * Palauttaa tilan alkutilaan (esim. kun halutaan luoda uusi satu).
+     * Palauttaa tilan alkutilaan (esim. "Luo uusi satu" -näkymään palatessa).
      */
     fun resetState() {
         _uiState.value = StoryUiState.Idle

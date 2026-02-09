@@ -202,4 +202,9 @@
 
     <string name="chart_bar_desc_format">%1$d satua</string>
 
+    <string name="notif_channel_name">Joulupukin vastaukset</string>
+    <string name="notif_channel_desc">Ilmoitukset kun Joulupukki vastaa kirjeeseen</string>
+    <string name="notif_title">Joulupukki vastasi 🎅</string>
+    <string name="notif_body">Avaa sovellus lukeaksesi vastauksen</string>
+
 </resources>

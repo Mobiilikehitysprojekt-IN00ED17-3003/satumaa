@@ -6,7 +6,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember as rememberCompose
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -27,6 +26,7 @@ import fi.antero.satumaa.ui.screens.story.StoryListScreen
 import fi.antero.satumaa.ui.screens.story.StoryScreen
 import fi.antero.satumaa.viewmodel.letter.LetterViewModel
 
+// Tunniste sisäkkäiselle navigaatiolle (Nested Graph)
 private const val LETTER_GRAPH = "letter_graph"
 
 @Composable
@@ -37,8 +37,11 @@ fun AppNavGraph(
     val backStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry.value?.destination?.route
 
+
+    // Nyt se on tässä muistissa sovelluksen eliniän ajan.
     var adventurerName by remember { mutableStateOf("Seikkailija") }
 
+    // Apufunktio navigointiin, joka estää tuplanavigoinnin ja palauttaa tilan
     val navigate: (String) -> Unit = { route ->
         navController.navigate(route) {
             launchSingleTop = true
@@ -51,9 +54,11 @@ fun AppNavGraph(
         startDestination = startDestination
     ) {
 
+        // --- AUTH & ONBOARDING ---
         composable(RootRoute.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
+                    // Kun kirjautuminen onnistuu, mennään Onboardingiin ja tyhjennetään backstack
                     navController.navigate(RootRoute.Onboarding.route) {
                         popUpTo(RootRoute.Login.route) { inclusive = true }
                     }
@@ -72,6 +77,7 @@ fun AppNavGraph(
             )
         }
 
+        // --- PÄÄVALIKKO ---
         composable(RootRoute.Menu.route) {
             MenuScreen(
                 currentRoute = currentRoute,
@@ -80,6 +86,7 @@ fun AppNavGraph(
             )
         }
 
+        // --- SADUT ---
         composable(
             route = RootRoute.Story.route + "?storyId={storyId}",
             arguments = listOf(navArgument("storyId") { nullable = true })
@@ -101,49 +108,60 @@ fun AppNavGraph(
             )
         }
 
+        // --- KIRJEET (NESTED GRAPH) ---
+        // Tämä ryhmittelee kirjeisiin liittyvät näkymät yhteen.
+        // TÄRKEÄÄ: Tämä mahdollistaa jaetun ViewModelin käytön näiden ruutujen välillä.
         navigation(
             route = LETTER_GRAPH,
             startDestination = RootRoute.Letter.route + "?letterId={letterId}"
         ) {
 
+            // 1. Kirjeen päänäkymä (Kirjoitus / Lukeminen)
             composable(
                 route = RootRoute.Letter.route + "?letterId={letterId}",
                 arguments = listOf(navArgument("letterId") { nullable = true })
             ) { entry ->
-                val parentEntry = rememberCompose(entry) { navController.getBackStackEntry(LETTER_GRAPH) }
+                // Haetaan ViewModel "letter_graph"-tasolta, ei pelkästään tältä ruudulta.
+                // Näin tila säilyy, vaikka siirrytään karttaan ja takaisin.
+                val parentEntry = remember(entry) { navController.getBackStackEntry(LETTER_GRAPH) }
                 val vm = hiltViewModel<LetterViewModel>(parentEntry)
 
                 val letterId = entry.arguments?.getString("letterId")
+
                 LetterFlowScreen(
                     currentRoute = currentRoute,
                     onNavigate = navigate,
                     userName = adventurerName,
                     letterId = letterId,
-                    vm = vm
+                    vm = vm // Välitetään jaettu ViewModel
                 )
             }
 
+            // 2. Kirjelista
             composable(RootRoute.LetterList.route) { entry ->
-                val parentEntry = rememberCompose(entry) { navController.getBackStackEntry(LETTER_GRAPH) }
+                val parentEntry = remember(entry) { navController.getBackStackEntry(LETTER_GRAPH) }
+                // Tämä alustaa ViewModelin tarvittaessa tai käyttää olemassa olevaa graph-scopessa
                 hiltViewModel<LetterViewModel>(parentEntry)
 
                 LetterListScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onLetterClick = { letterId ->
-                        navController.navigate(RootRoute.Letter.route + "?letterId=$letterId")
+                        navController.navigate(RootRoute.Letter.createRoute(letterId))
                     }
                 )
             }
 
+            // 3. Kamera (parametrilla)
             composable(
                 route = "${LetterRoutes.CAMERA}/{letterId}",
                 arguments = listOf(navArgument("letterId") { type = NavType.StringType })
             ) { entry ->
-                val parentEntry = rememberCompose(entry) { navController.getBackStackEntry(LETTER_GRAPH) }
+                val parentEntry = remember(entry) { navController.getBackStackEntry(LETTER_GRAPH) }
                 val vm = hiltViewModel<LetterViewModel>(parentEntry)
 
                 val letterId = entry.arguments?.getString("letterId")
 
+                // Ladataan kirje, jotta tiedämme mitä etsimme
                 LaunchedEffect(letterId) {
                     if (letterId != null) vm.loadLetter(letterId)
                 }
@@ -157,27 +175,16 @@ fun AppNavGraph(
                 )
             }
 
-            composable(LetterRoutes.CAMERA) { entry ->
-                val parentEntry = rememberCompose(entry) { navController.getBackStackEntry(LETTER_GRAPH) }
-                val vm = hiltViewModel<LetterViewModel>(parentEntry)
-
-                LetterCameraScreen(
-                    onFoundLetter = {
-                        vm.markLetterAsOpened()
-                        navController.popBackStack()
-                    },
-                    onBack = { navController.popBackStack() }
-                )
-            }
-
+            // 4. Kartta
             composable(
                 route = "${RootRoute.LetterMap.route}/{letterId}",
                 arguments = listOf(navArgument("letterId") { type = NavType.StringType })
             ) { entry ->
-                val parentEntry = rememberCompose(entry) { navController.getBackStackEntry(LETTER_GRAPH) }
+                val parentEntry = remember(entry) { navController.getBackStackEntry(LETTER_GRAPH) }
                 val vm = hiltViewModel<LetterViewModel>(parentEntry)
 
                 val letterId = entry.arguments?.getString("letterId") ?: ""
+
                 LetterMapScreen(
                     letterId = letterId,
                     onBack = { navController.popBackStack() },
@@ -186,6 +193,7 @@ fun AppNavGraph(
             }
         }
 
+        // --- PROFIILI ---
         composable(RootRoute.Profile.route) {
             ProfileScreen(
                 currentRoute = currentRoute,

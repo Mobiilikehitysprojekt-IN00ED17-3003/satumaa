@@ -8,13 +8,20 @@ import fi.antero.satumaa.data.remote.dto.toStoryDto
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
+/**
+ * StoryFirestoreSource vastaa satujen hakemisesta Firestoresta.
+ * Sadut tallennetaan käyttäjäkohtaiseen alikokoelmaan.
+ */
 class StoryFirestoreSource @Inject constructor(
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth
 ) {
 
     /**
-     * Hakee kaikki käyttäjän sadut pilvestä.
+     * Hakee kaikki käyttäjän tallentamat sadut pilvestä.
+     *
+     * Polku: users/{userId}/stories
+     * Järjestys: Uusin ensin (createdAt DESC)
      */
     suspend fun getUserStories(): List<StoryDto> {
         val userId = auth.currentUser?.uid ?: return emptyList()
@@ -29,14 +36,18 @@ class StoryFirestoreSource @Inject constructor(
 
             snapshot.documents.mapNotNull { it.toStoryDto() }
         } catch (e: Exception) {
-            // Hiljainen epäonnistuminen listan haussa on usein parempi taustasynkkaukselle.
-            // Repository käyttää tällöin vain paikallista tietokantaa.
+            // Hiljainen epäonnistuminen tukee Offline-First -arkkitehtuuria.
+            // Jos verkkoyhteyttä ei ole, Repository palauttaa vain paikalliset sadut.
             emptyList()
         }
     }
 
     /**
-     * Hakee yksittäisen sadun pilvestä ID:n perusteella.
+     * Hakee yksittäisen sadun tiedot pilvestä.
+     * Käytetään esimerkiksi varmistamaan, että satu on olemassa ennen muokkausta.
+     *
+     * @param storyId Sadun tunniste.
+     * @return StoryDto tai null, jos satua ei löydy tai käyttäjä ei ole kirjautunut.
      */
     suspend fun getStoryById(storyId: String): StoryDto? {
         val userId = auth.currentUser?.uid ?: return null
