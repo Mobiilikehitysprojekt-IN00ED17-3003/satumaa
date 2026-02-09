@@ -16,12 +16,17 @@ import androidx.compose.ui.unit.dp
 import fi.antero.satumaa.ui.screens.profile.math.TimeRange
 import fi.antero.satumaa.ui.theme.StorybookPaper
 
+/**
+ * Aikajänteen valitsin (FilterChip-rivi).
+ *
+ * Käyttäjä voi valita: "Viimeiset 7 päivää" tai "Viimeiset 30 päivää".
+ * Tämä päivittää ViewModelin tilan ja laskee graafit uudelleen.
+ */
 @Composable
 fun TimeRangeSelector(
     currentRange: TimeRange,
     onRangeSelected: (TimeRange) -> Unit
 ) {
-    // UI-kontrolli: vaihtaa laskennan ja kaavioiden ajanjaksoa (viikko / kuukausi)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -29,6 +34,7 @@ fun TimeRangeSelector(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Luodaan Chipit enum-arvoista (WEEKLY, MONTHLY)
         TimeRange.values().forEach { range ->
             val isSelected = range == currentRange
 
@@ -37,7 +43,7 @@ fun TimeRangeSelector(
                 onClick = { onRangeSelected(range) },
                 label = {
                     Text(
-                        text = range.label,
+                        text = range.label, // Enum sisältää käännetyn tekstin (tai resurssiviittauksen)
                         style = MaterialTheme.typography.labelLarge,
                         color = if (isSelected) Color.Black else StorybookPaper
                     )

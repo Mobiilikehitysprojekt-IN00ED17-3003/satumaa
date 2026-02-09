@@ -10,13 +10,15 @@ import java.net.UnknownHostException
 import java.util.concurrent.TimeoutException
 
 /**
- * Muuntaa tekniset virhekoodit ja poikkeukset ymmärrettäväksi tekstiksi.
- * Tämä toimii sovelluksen keskitettynä "sanakirjana".
+ * Laajennusfunktio (Extension Function) Throwable-luokalle.
+ *
+ * Muuntaa tekniset virhekoodit ja poikkeukset ymmärrettäväksi, lokalisoiduksi tekstiksi.
+ * Tämä toimii sovelluksen keskitettynä "sanakirjana" virheille.
  *
  * @param context Tarvitaan string-resurssien hakemiseen (R.string...).
  */
 fun Throwable.toUserFriendlyMessage(context: Context): String {
-    // 1. Fyysiset verkkovirheet (laitetaso)
+    // 1. Fyysiset verkkovirheet (laitetaso) -> "Ei verkkoyhteyttä"
     if (this is UnknownHostException || this is TimeoutException) {
         return context.getString(R.string.error_connection)
     }
@@ -26,6 +28,7 @@ fun Throwable.toUserFriendlyMessage(context: Context): String {
 
     return when {
         // --- TARINA-SPESIFISET KOODIT (StoryViewModel & Functions) ---
+        // Nämä virhekoodit tulevat suoraan Cloud Functionsista (backendistä)
         msg.contains("STORY_KEYWORDS_EMPTY") -> context.getString(R.string.error_story_keywords_empty)
         msg.contains("STORY_NOT_FOUND") -> context.getString(R.string.error_story_not_found)
         msg.contains("EMPTY_RESPONSE") -> context.getString(R.string.error_empty_response)
@@ -68,12 +71,15 @@ fun Throwable.toUserFriendlyMessage(context: Context): String {
         msg.contains("UNAUTHENTICATED") || msg.contains("AUTH_REQUIRED") || msg.contains("PERMISSION_DENIED") -> context.getString(R.string.error_auth_required)
 
         // --- OLETUS ---
+        // Jos virhettä ei tunnisteta, näytetään geneerinen "Jotain meni pieleen".
         else -> context.getString(R.string.error_generic)
     }
 }
 
 /**
- * Apufunktio, jolla voidaan kääntää pelkkä merkkijono (esim. Firestoren errorMessage-kenttä).
+ * Apufunktio, jolla voidaan kääntää pelkkä merkkijono (esim. Firestoren errorMessage-kenttä)
+ * käyttäjäystävälliseksi viestiksi. Hyödyntää yllä olevaa logiikkaa luomalla
+ * väliaikaisen Exceptionin.
  */
 fun String?.mapErrorToUserMessage(context: Context): String {
     if (this.isNullOrBlank()) return context.getString(R.string.error_unknown)
