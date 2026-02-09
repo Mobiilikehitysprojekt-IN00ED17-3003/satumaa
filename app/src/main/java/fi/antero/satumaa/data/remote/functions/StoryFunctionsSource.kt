@@ -7,10 +7,26 @@ import kotlinx.coroutines.tasks.await
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
+/**
+ * StoryFunctionsSource on rajapinta Firebase Cloud Functions -palveluihin (Backend).
+ *
+ * Tämä luokka ulkoistaa raskaan prosessoinnin (tekoälygeneroinnin) palvelimelle.
+ * Kommunikaatio tapahtuu HTTPS Callable -funktioiden kautta (RPC - Remote Procedure Call).
+ */
 class StoryFunctionsSource @Inject constructor(
     private val functions: FirebaseFunctions,
     private val auth: FirebaseAuth
 ) {
+
+    /**
+     * Kutsuu 'generateStory'-pilvifunktiota sadun luomiseksi.
+     *
+     * @param childName Lapsen nimi.
+     * @param keywords Lista avainsanoja.
+     * @param length Pituusvalinta (esim. "NORMAL").
+     * @param style Tyylivalinta (esim. "EXCITING").
+     * @return Result<Story>: Onnistuessa generoitu Story-objekti (sisältää previewId:n).
+     */
     suspend fun generateStory(
         childName: String,
         keywords: List<String>,
@@ -21,7 +37,7 @@ class StoryFunctionsSource @Inject constructor(
             ?: return Result.failure(Exception("AUTH_REQUIRED"))
 
         return try {
-            // Varmistetaan tokenin tuoreus
+            // Pakotetaan tokenin päivitys ennen kutsua, jotta backend saa varmasti validin auth-tiedon
             user.getIdToken(true).await()
 
             val data = hashMapOf(
@@ -31,17 +47,21 @@ class StoryFunctionsSource @Inject constructor(
                 "style" to style
             )
 
+            // Kutsutaan funktiota.
+            // Timeout on nostettu 60 sekuntiin, koska LLM-generointi voi kestää.
             val result = functions
                 .getHttpsCallable("generateStory")
                 .withTimeout(60, TimeUnit.SECONDS)
                 .call(data)
                 .await()
 
+            // Parsitaan vastaus (Map -> Story)
             val response = result.data as? Map<*, *>
             val storyMap = response?.get("story") as? Map<*, *>
             val previewId = response?.get("previewId") as? String
 
             if (storyMap != null) {
+                // Luodaan Domain-malli. ID on tässä vaiheessa tyhjä, koska satua ei ole vielä tallennettu.
                 val story = Story(
                     id = "",
                     title = storyMap["title"] as? String ?: "Nimetön satu",
@@ -51,23 +71,31 @@ class StoryFunctionsSource @Inject constructor(
                     keywords = (storyMap["keywords"] as? List<*>)?.joinToString(", ") ?: "",
                     createdAt = System.currentTimeMillis(),
                     isFavorite = false,
-                    previewId = previewId
+                    previewId = previewId // Tärkeä: yhdistää esikatselun tallennukseen
                 )
                 Result.success(story)
             } else {
                 Result.failure(Exception("EMPTY_RESPONSE"))
             }
         } catch (e: Exception) {
-            // Virhe (esim. RATE_LIMIT_STORY) nousee suoraan ylös kääntäjälle
+            // Backendin palauttamat virheet (esim. RATE_LIMIT_STORY) nousevat täältä
+            // ja ne käännetään ErrorUtilsissa suomeksi.
             Result.failure(e)
         }
     }
 
+    /**
+     * Kutsuu 'saveStory'-pilvifunktiota generoidun sadun tallentamiseksi.
+     *
+     * @param story Tallennettava satu (sisältää previewId:n).
+     * @return Result<String>: Uuden sadun pysyvä ID (UUID) Firestoresta.
+     */
     suspend fun saveStoryToCloud(story: Story): Result<String> {
         val user = auth.currentUser
             ?: return Result.failure(Exception("AUTH_REQUIRED"))
 
         return try {
+            // Muunnetaan avainsanat takaisin listaksi backendiä varten
             val keywordsList = story.keywords.split(",").map { it.trim() }.filter { it.isNotEmpty() }
 
             val data = hashMapOf(

@@ -9,6 +9,12 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import fi.antero.satumaa.data.remote.firestore.LetterFirestoreSource
 
+/**
+ * Taustatyö kirjeen poistamiseksi pilvestä.
+ *
+ * Toimintaperiaate sama kuin DeleteStoryWorkerissa, mutta tämä hyödyntää
+ * siististi [LetterFirestoreSource]-luokkaa suoran Firestore-kutsun sijaan.
+ */
 @HiltWorker
 class DeleteLetterWorker @AssistedInject constructor(
     @Assisted appContext: Context,
@@ -21,7 +27,10 @@ class DeleteLetterWorker @AssistedInject constructor(
 
         return try {
             Log.d("DeleteLetterWorker", "Deleting letter from cloud: $letterId")
+
+            // Delegoi poiston Remote Sourcelle
             firestoreSource.deleteLetter(letterId)
+
             Result.success()
         } catch (e: Exception) {
             Log.e("DeleteLetterWorker", "Delete failed, retrying later", e)

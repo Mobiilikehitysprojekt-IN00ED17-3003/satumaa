@@ -19,16 +19,28 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * StoryRepositoryImpl toteuttaa tarinoiden hallinnan.
+ *
+ * Arkkitehtuuri:
+ * 1. Lukeminen: Aina paikallisesta kannasta (Room) -> Nopea, toimii offline.
+ * 2. Kirjoitus/Generointi: Vaatii verkon (Cloud Functions).
+ * 3. Poisto: Optimistinen (heti pois lokaalista) + Taustatyö (WorkManager pilveen).
+ */
 @Singleton
 class StoryRepositoryImpl @Inject constructor(
-    private val firestoreSource: StoryFirestoreSource,
-    private val functionsSource: StoryFunctionsSource,
-    private val storyDao: StoryDao,
+    private val firestoreSource: StoryFirestoreSource, // Datan haku pilvestä
+    private val functionsSource: StoryFunctionsSource, // AI-generointi ja tallennus
+    private val storyDao: StoryDao,                    // Paikallinen välimuisti
     @ApplicationContext private val context: Context
 ) : StoryRepository {
 
     private val workManager by lazy { WorkManager.getInstance(context) }
 
+    /**
+     * Palauttaa Flow'n, joka muuntaa tietokannan Entityt suoraan Domain-malleiksi.
+     * UI päivittyy automaattisesti aina kun DAO muuttuu.
+     */
     override fun getStories(): Flow<List<Story>> {
         return storyDao.getAllStories().map { entities ->
             entities.map { it.toDomainModel() }
@@ -39,6 +51,10 @@ class StoryRepositoryImpl @Inject constructor(
         return storyDao.getStoryById(id)?.toDomainModel()
     }
 
+    /**
+     * Hakee kaikki sadut Firestoresta ja tallentaa ne Roomiin.
+     * Tämä on "yksisuuntainen synkkaus" (Cloud -> Device).
+     */
     override suspend fun refreshStories() {
         try {
             val dtos = firestoreSource.getUserStories()
@@ -47,10 +63,16 @@ class StoryRepositoryImpl @Inject constructor(
                 storyDao.insertStories(entities)
             }
         } catch (e: Exception) {
+            // Logitetaan virhe, mutta ei kaadeta sovellusta.
+            // Käyttäjä näkee yhä vanhat, välimuistissa olevat sadut.
             Log.e("StoryRepository", "Synkronointi epäonnistui: ${e.message}")
         }
     }
 
+    /**
+     * Kutsuu tekoälyä luomaan sadun.
+     * Vaatii verkkoyhteyden.
+     */
     override suspend fun generateStoryPreview(
         childName: String,
         keywords: List<String>,
@@ -63,6 +85,14 @@ class StoryRepositoryImpl @Inject constructor(
         return functionsSource.generateStory(childName, keywords, length, style)
     }
 
+    /**
+     * Tallentaa generoidun sadun.
+     *
+     * Logiikka:
+     * 1. Yritetään tallentaa pilveen (Cloud Function).
+     * 2. Jos onnistuu, saadaan uusi ID.
+     * 3. Tallennetaan satu tällä uudella ID:llä paikalliseen kantaan.
+     */
     override suspend fun saveStory(story: Story): Result<String> {
         if (!isOnline()) {
             return Result.failure(Exception("NETWORK_ERROR"))
@@ -77,18 +107,26 @@ class StoryRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Poistaa sadun "Optimistic UI" -tavalla.
+     * 1. Poistetaan heti paikallisesta kannasta -> katoaa UI:sta heti.
+     * 2. Ajastetaan WorkManager-työ poistamaan se pilvestä taustalla.
+     */
     override suspend fun deleteStory(storyId: String) {
         storyDao.deleteStory(storyId)
 
         val workRequest = OneTimeWorkRequestBuilder<DeleteStoryWorker>()
             .setInputData(workDataOf("STORY_ID" to storyId))
+            // Yritetään suorittaa heti, jos mahdollista
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            // Vaatii verkkoyhteyden
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            // Jos epäonnistuu, yritä uudelleen eksponentiaalisella viiveellä
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)
             .build()
 
         workManager.enqueueUniqueWork(
-            "delete_$storyId",
+            "delete_$storyId", // Yksilöllinen nimi estää duplikaatit
             ExistingWorkPolicy.KEEP,
             workRequest
         )

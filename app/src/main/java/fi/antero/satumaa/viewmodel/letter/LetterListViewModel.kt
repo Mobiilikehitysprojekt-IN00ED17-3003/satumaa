@@ -9,19 +9,26 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * ViewModel kirjehistorialistalle (LetterListScreen).
+ * Yksinkertainen ViewModel, joka vain välittää datan repositoriosta UI:lle.
+ */
 @HiltViewModel
 class LetterListViewModel @Inject constructor(
     private val repository: LetterRepository
 ) : ViewModel() {
 
+    // Muunnetaan Repositoryn Flow (joka päivittyy automaattisesti Roomista)
+    // StateFlow'ksi, jota UI voi kuunnella tehokkaasti.
     val letters = repository.getLetters()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(5000), // Pidetään data muistissa 5s tilauksen loppumisen jälkeen
             initialValue = emptyList()
         )
 
     init {
+        // Kun lista avataan, varmistetaan että meillä on tuorein data pilvestä
         refreshLetters()
     }
 

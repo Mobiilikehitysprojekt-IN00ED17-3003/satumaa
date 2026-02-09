@@ -26,26 +26,16 @@ import fi.antero.satumaa.util.mapErrorToUserMessage
 import fi.antero.satumaa.viewmodel.auth.AuthUiState
 import fi.antero.satumaa.viewmodel.auth.AuthViewModel
 
-/**
- * LoginScreen hallinnoi käyttäjän tunnistautumista.
- *
- * Vastuualueet:
- * 1. Google Sign-In -prosessin käynnistys ja tulosten käsittely.
- * 2. Ilmoituslupien pyytäminen (Android 13+).
- * 3. UI-tilan (Loading, Error, Success) ohjaus.
- */
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
+    val context = LocalContext.current // Saadaan context Compose-puolelta
     val uiState by viewModel.uiState.collectAsState()
 
-    // Paikallinen tila Google Sign-In -virheille (ennen ViewModelia)
     var googleError by remember { mutableStateOf<String?>(null) }
 
-    // --- Luvat (Android 13+) ---
     val notifPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { Log.d("LoginScreen", "Notification permission: $it") }
@@ -56,7 +46,6 @@ fun LoginScreen(
         }
     }
 
-    // --- Google Sign-In Alustus ---
     val googleClientId = context.getString(R.string.default_web_client_id)
     val googleSignInClient = remember {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -66,7 +55,6 @@ fun LoginScreen(
         GoogleSignIn.getClient(context, gso)
     }
 
-    // --- Google Sign-In Tuloskäsittelijä ---
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -79,27 +67,24 @@ fun LoginScreen(
                 if (!idToken.isNullOrBlank()) {
                     viewModel.signInWithGoogle(idToken)
                 } else {
-                    // Tekninen virhe -> Käyttäjäystävällinen viesti
+                    // KORJATTU: Välitetään context mapErrorToUserMessage-funktiolle
                     googleError = "AUTH_GOOGLE_TOKEN_MISSING".mapErrorToUserMessage(context)
                 }
             } catch (e: ApiException) {
                 Log.e("LoginScreen", "Google Sign-In failed", e)
+                // KORJATTU: Välitetään context
                 googleError = "AUTH_GOOGLE_API_ERROR".mapErrorToUserMessage(context)
             }
         }
     }
 
-    // --- Navigointi onnistuessa ---
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
             onLoginSuccess()
         }
     }
 
-    // --- UI Rakentaminen ---
     Box(modifier = Modifier.fillMaxSize()) {
-
-        // 1. Tausta
         AuthBackground()
 
         Column(
@@ -108,15 +93,10 @@ fun LoginScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Asettelu: Otsikko ylhäällä, napit keskellä/alhaalla
             Spacer(modifier = Modifier.weight(3f))
-
-            // 2. Otsikko
             AuthHeader()
-
             Spacer(modifier = Modifier.weight(1f))
 
-            // 3. Sisältöalue (Lataus, Virhe tai Napit)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -127,7 +107,6 @@ fun LoginScreen(
                     is AuthUiState.Loading -> LoadingView()
 
                     is AuthUiState.Error -> {
-                        // ViewModelin virheet (esim. Firebase-virhe)
                         ErrorView(
                             message = state.message,
                             onRetry = {
@@ -138,10 +117,7 @@ fun LoginScreen(
                     }
 
                     else -> {
-                        // Perustila: Näytetään napit ja mahdolliset Google-virheet
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-
-                            // Paikallinen virhe (Google API)
                             googleError?.let { msg ->
                                 ErrorView(
                                     message = msg,
