@@ -1,3 +1,118 @@
 <resources>
     <string name="app_name">satumaa</string>
+
+    <string name="menu_default_user">Seikkailija</string>
+    <string name="menu_greeting">Terve, %1$s!</string>
+    <string name="menu_subtitle">Mitä taikaa tänään luodaan?</string>
+
+    <string name="menu_story_title">Lue Iltasatu</string>
+    <string name="menu_story_desc">Taikuutta jokaiseen iltaan</string>
+
+    <string name="menu_letter_title">Kirje Joulupukille</string>
+    <string name="menu_letter_desc">Lähetä terveisesi Korvatunturille</string>
+
+    <string name="auth_welcome_title">Tervetuloa Satumaahan</string>
+    <string name="auth_login_google">Jatka Google-tilillä</string>
+    <string name="auth_login_anonymous">Kokeile ilman tiliä</string>
+
+    <string name="onboarding_title">Tervetuloa seikkailuun!</string>
+    <string name="onboarding_subtitle">Kuka tänään lähtee matkaan?</string>
+    <string name="onboarding_name_label">Seikkailijan nimi</string>
+    <string name="onboarding_button_start">Aloita seikkailu</string>
+
+    <string name="profile_title">Profiili</string>
+    <string name="profile_logged_in_as">Kirjautunut käyttäjä:</string>
+    <string name="profile_no_email">Ei sähköpostia</string>
+    <string name="profile_logout">Kirjaudu ulos</string>
+
+    <string name="letter_my_letters">Omat kirjeet</string>
+    <string name="letter_new_button">Kirjoita uusi kirje</string>
+    <string name="letter_back">Takaisin</string>
+
+    <string name="letter_input_title">Kirje Joulupukille</string>
+    <string name="letter_input_greeting">Hei %1$s! Kirjoita kirjeesi tähän...</string>
+    <string name="letter_input_placeholder">Rakas Joulupukki...</string>
+    <string name="letter_input_sending">Lähetetään...</string>
+    <string name="letter_input_waiting_location">Odotetaan sijaintia...</string>
+    <string name="letter_input_send">Lähetä</string>
+
+    <string name="letter_status_thinking">Pukki miettii vastausta... 🎅</string>
+
+    <string name="letter_result_your_letter">Sinun kirjeesi:</string>
+    <string name="letter_result_santa_reply_title">Pukin vastaus:</string>
+    <string name="letter_result_opening">Avataan kirjettä...</string>
+    <string name="letter_result_arrived_title">📩</string>
+    <string name="letter_result_arrived_text">Sinulle on saapunut vastaus!</string>
+    <string name="letter_result_open_ar">Etsi ja avaa kirje (AR)</string>
+    <string name="letter_result_or">Tai</string>
+    <string name="letter_result_open_math">Avaa ratkaisemalla tehtävä 🧮</string>
+    <string name="letter_result_reading">Pukki lukee vielä kirjettäsi...</string>
+
+    <string name="letter_perm_title">Tarvitsemme sijaintiluvan</string>
+    <string name="letter_perm_desc">Sijaintia käytetään vain kirjeen karttanäkymään.</string>
+    <string name="letter_perm_button">Salli sijainti</string>
+    <string name="letter_loc_searching">Haetaan sijaintia...</string>
+    <string name="letter_loc_dialog_title">Sijainti pois päältä</string>
+    <string name="letter_loc_dialog_desc">Ota sijainti (GPS) käyttöön, jotta kartta toimii.</string>
+    <string name="letter_loc_dialog_settings">Avaa asetukset</string>
+
+    <string name="letter_math_title">Pukin pulmatehtävä</string>
+    <string name="letter_math_desc">Avaa kirje ratkaisemalla tämä lasku:</string>
+    <string name="letter_math_answer_label">Vastaus</string>
+    <string name="letter_math_open_button">Avaa kirje</string>
+    <string name="letter_math_cancel">Peruuta</string>
+
+    <string name="letter_list_title">Kirjeposti</string>
+    <string name="letter_list_empty">Postilaatikko on tyhjä.</string>
+    <string name="letter_list_delete_title">Poista kirje?</string>
+    <string name="letter_list_delete_confirm">Haluatko varmasti poistaa tämän kirjeen? Sitä ei voi palauttaa.</string>
+    <string name="letter_list_delete_action">Poista</string>
+    <string name="letter_list_cancel_action">Peruuta</string>
+    <string name="letter_list_cd_delete">Poista kirje</string>
+
+    <string name="letter_map_title">Kirjeen matka Joulupukille</string>
+    <string name="letter_map_searching_loc">Etsitään sijaintiasi...</string>
+    <string name="letter_map_on_way">Kirje on matkalla...</string>
+    <string name="letter_map_arrived_title">Joulupukki sai kirjeesi!</string>
+    <string name="letter_map_arrived_desc">Kirje kulki: %1$.1f km matkan.</string>
+    <string name="letter_map_back_button">Palaa odottamaan vastausta</string>
+    <string name="letter_map_marker_you">Sinä</string>
+    <string name="letter_map_marker_santa">Joulupukki</string>
+    <string name="letter_map_marker_letter">Kirje on matkalla...</string>
+
+    <string name="story_list_title">Omat sadut</string>
+    <string name="story_list_empty">Ei vielä satuja. Vedä alas päivittääksesi.</string>
+    <string name="story_list_delete_title">Poistetaanko satu?</string>
+    <string name="story_list_delete_confirm">Haluatko varmasti poistaa sadun \"%1$s\"? Tätä toimintoa ei voi kumota.</string>
+    <string name="story_list_delete_action">Poista</string>
+    <string name="story_list_cancel_action">Peruuta</string>
+    <string name="story_list_cd_delete">Poista satu</string>
+
+    <string name="story_create_title">Sadun Taikaa</string>
+    <string name="story_create_instruction">Kirjoita kolme taikasanaa,\nniin %1$s saa sadun!</string>
+    <string name="story_create_word_1">1. Taikasana</string>
+    <string name="story_create_word_2">2. Taikasana</string>
+    <string name="story_create_word_3">3. Taikasana</string>
+    <string name="story_create_button_magic">TAIO SATU!</string>
+    <string name="story_create_loading">Taikuutta ilmassa...</string>
+
+    <string name="story_result_save_button">Tallenna kirjahyllyyn</string>
+    <string name="story_result_discard_button">Hylkää ja tee uusi</string>
+    <string name="story_result_saved_text">✓ Tallennettu kirjahyllyyn</string>
+    <string name="story_result_new_button">Tee uusi satu</string>
+
+    <string name="story_selector_length_label">Sadun pituus</string>
+    <string name="story_length_short">Lyhyt</string>
+    <string name="story_length_normal">Normaali</string>
+    <string name="story_length_long">Pitkä</string>
+
+    <string name="story_selector_style_label">Sadun tyyli</string>
+    <string name="story_style_default">Perus</string>
+    <string name="story_style_exciting">Jännittävä</string>
+    <string name="story_style_calming">Rauhoittava</string>
+    <string name="story_style_funny">Hassu</string>
+    <string name="story_style_educational">Opettavainen</string>
+    <string name="story_style_andersen">Andersen</string>
+    <string name="story_style_grimm">Grimm</string>
+    <string name="story_style_jansson">Muumimainen</string>
 </resources>

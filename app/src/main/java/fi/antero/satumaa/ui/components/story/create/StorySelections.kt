@@ -1,4 +1,4 @@
-/*package fi.antero.satumaa.ui.components.story
+package fi.antero.satumaa.ui.components.story.create
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,27 +13,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import fi.antero.satumaa.R
 import fi.antero.satumaa.ui.theme.StorybookPaper
 
-// --- Tietotyypit ---
+// --- Tietotyypit (Enumit) ---
 
-enum class StoryLength(val label: String, val apiValue: String) {
-    SHORT("Lyhyt", "SHORT"),
-    NORMAL("Normaali", "NORMAL"),
-    LONG("Pitkä", "LONG")
+enum class StoryLength(val labelRes: Int, val apiValue: String) {
+    SHORT(R.string.story_length_short, "SHORT"),
+    NORMAL(R.string.story_length_normal, "NORMAL"),
+    LONG(R.string.story_length_long, "LONG")
 }
 
-enum class StoryStyle(val label: String, val icon: String, val apiValue: String, val color: Color) {
-    DEFAULT("Perus", "📜", "DEFAULT", Color(0xFFCFD8DC)), // Harmaa/Neutraali
-    EXCITING("Jännittävä", "⚡", "EXCITING", Color(0xFFFFB74D)), // Oranssi
-    CALMING("Rauhoittava", "😴", "CALMING", Color(0xFF90CAF9)), // Vaaleansininen
-    FUNNY("Hassu", "🤪", "FUNNY", Color(0xFFF06292)), // Pinkki
-    EDUCATIONAL("Opettavainen", "🦉", "EDUCATIONAL", Color(0xFFAED581)), // Vihreä
-    ANDERSEN("Andersen", "🦢", "ANDERSEN", Color(0xFFBA68C8)), // Purppura
-    GRIMM("Grimm", "🏰", "GRIMM", Color(0xFFE57373)), // Punainen
-    JANSSON("Muumimainen", "🍃", "JANSSON", Color(0xFF4DB6AC)) // Vihreä
+enum class StoryStyle(val labelRes: Int, val icon: String, val apiValue: String, val color: Color) {
+    DEFAULT(R.string.story_style_default, "📜", "DEFAULT", Color(0xFFCFD8DC)),
+    EXCITING(R.string.story_style_exciting, "⚡", "EXCITING", Color(0xFFFFB74D)),
+    CALMING(R.string.story_style_calming, "😴", "CALMING", Color(0xFF90CAF9)),
+    FUNNY(R.string.story_style_funny, "🤪", "FUNNY", Color(0xFFF06292)),
+    EDUCATIONAL(R.string.story_style_educational, "🦉", "EDUCATIONAL", Color(0xFFAED581)),
+    ANDERSEN(R.string.story_style_andersen, "🦢", "ANDERSEN", Color(0xFFBA68C8)),
+    GRIMM(R.string.story_style_grimm, "🏰", "GRIMM", Color(0xFFE57373)),
+    JANSSON(R.string.story_style_jansson, "🍃", "JANSSON", Color(0xFF4DB6AC))
 }
 
 // --- Komponentit ---
@@ -45,7 +47,7 @@ fun StoryLengthSelector(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Sadun pituus",
+            text = stringResource(R.string.story_selector_length_label),
             style = MaterialTheme.typography.labelMedium,
             color = StorybookPaper.copy(alpha = 0.8f),
             modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
@@ -70,7 +72,7 @@ fun StoryLengthSelector(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = length.label,
+                        text = stringResource(length.labelRes),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = if (isSelected) Color.Black else StorybookPaper
@@ -88,7 +90,7 @@ fun StoryStyleSelector(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Sadun tyyli",
+            text = stringResource(R.string.story_selector_style_label),
             style = MaterialTheme.typography.labelMedium,
             color = StorybookPaper.copy(alpha = 0.8f),
             modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
@@ -104,7 +106,12 @@ fun StoryStyleSelector(
                 FilterChip(
                     selected = isSelected,
                     onClick = { onStyleSelected(style) },
-                    label = { Text(style.label, color = if (isSelected) Color.Black else StorybookPaper) },
+                    label = {
+                        Text(
+                            stringResource(style.labelRes),
+                            color = if (isSelected) Color.Black else StorybookPaper
+                        )
+                    },
                     leadingIcon = { Text(style.icon) },
                     colors = FilterChipDefaults.filterChipColors(
                         containerColor = Color.Black.copy(alpha = 0.3f),
@@ -122,4 +129,4 @@ fun StoryStyleSelector(
             }
         }
     }
-}*/
+}
