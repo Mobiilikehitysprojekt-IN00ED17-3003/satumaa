@@ -2,14 +2,26 @@ package fi.antero.satumaa.util
 
 import kotlin.random.Random
 
+/**
+ * Tietomalli yhdelle matikkahaasteelle.
+ */
 data class MathChallenge(
-    val question: String,
-    val correctAnswer: Int
+    val question: String,   // Esim. "5 + 3 = ?"
+    val correctAnswer: Int  // Esim. 8
 )
 
+/**
+ * Generoi yksinkertaisia laskutehtäviä "Parental Gate" -toimintoa varten.
+ *
+ * Tarkoitus on varmistaa, että käyttäjä on lukutaitoinen aikuinen (tai isompi sisarus),
+ * eikä pikkulapsi, joka vahingossa avaa kirjeen tai poistuu sovelluksesta.
+ */
 object MathChallengeGenerator {
 
-    // Generoi yksinkertaisen laskutoimituksen (0-10 alueella)
+    /**
+     * Luo uuden satunnaisen haasteen (yhteen- tai vähennyslasku).
+     * Luvut pidetään pieninä (0-10), jotta laskeminen on nopeaa aikuiselle.
+     */
     fun generateChallenge(): MathChallenge {
         val isAddition = Random.nextBoolean()
 
@@ -19,9 +31,9 @@ object MathChallengeGenerator {
             val b = Random.nextInt(1, 6) // 1..5
             return MathChallenge("$a + $b = ?", a + b)
         } else {
-            // Vähennyslasku (ei negatiivisia, max vähennettävä 10)
+            // Vähennyslasku (tulos ei saa olla negatiivinen)
             val a = Random.nextInt(2, 11) // 2..10
-            val b = Random.nextInt(1, a)  // b on aina pienempi kuin a
+            val b = Random.nextInt(1, a)  // b on aina pienempi kuin a -> tulos > 0
             return MathChallenge("$a - $b = ?", a - b)
         }
     }

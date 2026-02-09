@@ -17,20 +17,27 @@ import co.yml.charts.ui.piechart.models.PieChartData
 import fi.antero.satumaa.R
 import fi.antero.satumaa.ui.viewmodel.stats.StatsUiState
 
+/**
+ * Donitsi-piirakkakaavio avainsanojen jakaumalle.
+ *
+ * Käyttää YCharts-kirjastoa. Näyttää keskellä valitun kategorian tiedot.
+ */
 @Composable
 fun KeywordsPieChart(uiState: StatsUiState) {
     if (uiState.topKeywords.isEmpty()) return
 
-    // Haetaan oletustekstit resursseista
+    // Oletustekstit ("Tyylit", "Klikkaa sektoria")
     val defaultCenterText = stringResource(R.string.chart_pie_center_default)
     val defaultHintText = stringResource(R.string.chart_pie_click_hint)
 
+    // Tila keskellä näytettävälle tekstille
     var selectedWord by remember { mutableStateOf(defaultCenterText) }
     var selectedCount by remember { mutableStateOf(defaultHintText) }
 
-    // Formatointistringi (esim. "%1$d kpl (%2$d%%)")
+    // Formatointistringi luvuille (esim. "%1$d kpl (%2$d%%)")
     val countFormat = stringResource(R.string.chart_pie_count_format)
 
+    // Muunnetaan StatsUiState-data YCharts-kirjaston ymmärtämään muotoon
     val slices = uiState.topKeywords.map { stat ->
         PieChartData.Slice(
             label = stat.styleName,
@@ -41,16 +48,17 @@ fun KeywordsPieChart(uiState: StatsUiState) {
 
     val pieChartData = PieChartData(
         slices = slices,
-        plotType = PlotType.Donut
+        plotType = PlotType.Donut // Donitsi-tyyli (reikä keskellä)
     )
 
+    // Kaavion asetukset
     val pieChartConfig = PieChartConfig(
         isAnimationEnable = true,
-        showSliceLabels = false,
-        activeSliceAlpha = 0.8f,
+        showSliceLabels = false, // Piilotetaan labelit itse graafista (ahtauden välttämiseksi)
+        activeSliceAlpha = 0.8f, // Valitun sektorin korostus
         backgroundColor = Color.Transparent,
         isSumVisible = false,
-        strokeWidth = 100f,
+        strokeWidth = 100f, // Renkaan paksuus
         chartPadding = 25,
         isClickOnSliceEnabled = true,
         labelColor = Color(0xFF1B1B1F)
@@ -67,19 +75,24 @@ fun KeywordsPieChart(uiState: StatsUiState) {
                 .height(300.dp),
             contentAlignment = Alignment.Center
         ) {
+            // YCharts Donitsi
             DonutPieChart(
                 modifier = Modifier.fillMaxSize(),
                 pieChartData = pieChartData,
                 pieChartConfig = pieChartConfig,
                 onSliceClick = { slice ->
+                    // Päivitetään keskiteksti, kun käyttäjä klikkaa sektoria
                     selectedWord = slice.label
+
+                    // Etsitään alkuperäinen data, jotta saadaan tarkka lukumäärä
                     val originalStat = uiState.topKeywords.find { it.styleName == slice.label }
                     val count = originalStat?.count ?: 0
-                    // Formatoidaan luku ja prosentti resurssin avulla
+
                     selectedCount = String.format(countFormat, count, slice.value.toInt())
                 }
             )
 
+            // Teksti donitsin reiän sisällä
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = selectedWord,

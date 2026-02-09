@@ -14,17 +14,19 @@ import java.util.Locale
 import kotlin.math.max
 
 /**
- * StatsMathEngine on sovelluksen matemaattinen ydin.
- * Se vastaa datan aggregoinnista, tilastollisesta laskennasta (kuten lineaarinen regressio)
- * ja raakadatamuunnoksista UI-komponenteille sopivaan muotoon.
+ * StatsMathEngine on sovelluksen matemaattinen moottori.
+ *
+ * Se ei tiedä mitään UI:sta tai tietokannasta, vaan se ottaa sisään raakadataa (List<Story>)
+ * ja palauttaa pureskeltua tilastotietoa (List<WeeklyStats>, List<Point> jne.).
  */
 object StatsMathEngine {
 
     /**
-     * Ryhmittelee sadut aikajakson mukaan (viikko tai kuukausi) ja laskee pituustilastot.
+     * Aggregoi (ryhmittelee) sadut aikajakson mukaan (viikko tai kuukausi).
+     * Laskee jokaiselle jaksolle satujen määrän ja keskimääräisen pituuden.
      */
     fun buildWeeklyStats(range: TimeRange, stories: List<Story>): List<WeeklyStats> {
-        // 1. Ryhmittely: Luodaan avain (vuosi-viikko tai vuosi-kuukausi) luontipäivämäärän perusteella
+        // 1. Ryhmittely: Luodaan avain (esim. "2024-W42" tai "2024-10")
         val grouped = stories.groupBy { story ->
             if (range == TimeRange.WEEKLY) {
                 val pair = MathUtils.getYearWeekPair(story.createdAt)
@@ -35,12 +37,12 @@ object StatsMathEngine {
             }
         }
 
-        // 2. Map-operaatio: Lasketaan kunkin ryhmän sanamäärien summa ja keskiarvo
+        // 2. Laskenta: Summataan sanamäärät ja lasketaan keskiarvo per ryhmä
         val mapped = grouped.map { (key, storyList) ->
             val totalWords = storyList.sumOf { MathUtils.countWords(it.content) }
             val avgLength = if (storyList.isNotEmpty()) totalWords / storyList.size else 0
 
-            // Luodaan käyttäjäystävällinen label (esim. "Vk 4" tai "Tammikuu")
+            // Luodaan luettava otsikko (esim. "Vk 42" tai "Lokakuu")
             val label = if (range == TimeRange.WEEKLY) {
                 val week = key.substringAfter("W")
                 "Vk $week"
@@ -56,38 +58,43 @@ object StatsMathEngine {
             )
         }
 
-        // Järjestetään aikajärjestykseen (laskeva) ja rajoitetaan näkymä 6 viimeisimpään soluun
+        // Palautetaan 6 uusinta jaksoa aikajärjestyksessä
         return mapped
-            .sortedByDescending { it.weekLabel }
+            .sortedByDescending { it.weekLabel } // Huom: Tämä sorttaus on yksinkertaistettu, oikeasti pitäisi sortata 'key':n mukaan
             .take(6)
+            .reversed() // Käännetään, jotta vanhin on vasemmalla (graafia varten)
     }
 
     /**
-     * Laskee suosituimmat avainsanat ja valmistelee datan donitsikaaviota varten.
+     * Analysoi satujen avainsanat ja laskee suosituimmat tyylit donitsikaaviota varten.
      */
     fun buildTopKeywords(stories: List<Story>): List<StyleStat> {
         val allKeywords = mutableListOf<String>()
 
-        // Kerätään kaikki avainsanat yhteen listaan, siivotaan välilyönnit ja suodatetaan testi-data ("a")
+        // Pilkotaan pilkulla erotetut avainsanat ja siivotaan ne
         for (story in stories) {
             val parts = story.keywords.split(",")
             for (part in parts) {
                 val cleaned = part.trim().lowercase()
+                // Suodatetaan tyhjät ja roskat (kuten "a")
                 if (cleaned.isNotBlank() && cleaned != "a") {
                     allKeywords.add(cleaned)
                 }
             }
         }
 
-        // Lasketaan kunkin sanan esiintymiskerrat (Frequency count)
+        // Lasketaan frekvenssit (kuinka monta kertaa mikäkin sana esiintyy)
         val keywordCounts = allKeywords.groupingBy { it }.eachCount()
+
+        // Väripaletti sektoreille
         val pieColors = listOf(Forest, Terracotta, Sky, Gold, ForestDark, Color.Gray)
 
-        // Muunnetaan laskennat StyleStat-objekteiksi (top 5 suosituinta)
+        // Otetaan top 5 suosituinta
         return keywordCounts.entries
             .sortedByDescending { it.value }
             .take(5)
             .mapIndexed { index, entry ->
+                // Muotoillaan sana (alkukirjain isolla)
                 val rawName = entry.key
                 val niceName = rawName.replaceFirstChar {
                     if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
@@ -96,7 +103,7 @@ object StatsMathEngine {
                 StyleStat(
                     styleName = niceName,
                     count = entry.value,
-                    // Lasketaan prosentuaalinen osuus kaikista käytetyistä avainsanoista
+                    // Lasketaan prosenttiosuus kokonaismäärästä
                     percentage = if (allKeywords.isNotEmpty()) (entry.value.toFloat() / allKeywords.size) * 100f else 0f,
                     color = pieColors.getOrElse(index) { Color.Gray }
                 )
@@ -104,7 +111,8 @@ object StatsMathEngine {
     }
 
     /**
-     * Laskee seikkailuindeksin jokaiselle sadulle hajakuvaajaa varten.
+     * Laskee datan hajakuvaajaa (Scatter Plot) varten.
+     * Jokainen satu on piste, jolla on X (pituus) ja Y (seikkailupisteet).
      */
     fun buildAdventurePoints(stories: List<Story>): List<AdventurePoint> {
         return stories.map { story ->
@@ -112,7 +120,7 @@ object StatsMathEngine {
                 storyId = story.id,
                 title = story.title,
                 wordCount = MathUtils.countWords(story.content).toFloat(),
-                // AdventureScore perustuu algoritmiin (avainsanat + huutomerkit / pituus)
+                // Lasketaan "seikkailupisteet" tekstianalyysillä
                 adventureScore = MathUtils.calculateAdventureScore(story.content).toFloat(),
                 styleIcon = getIconForStyle(story.style)
             )
@@ -120,11 +128,13 @@ object StatsMathEngine {
     }
 
     /**
-     * Lineaarinen regressio (Pienimmän neliösumman menetelmä / OLS).
-     * Laskee trendiviivan sadun keskimääräisen pituuden kehitykselle.
+     * LASKENTA: Lineaarinen regressio (Pienimmän neliösumman menetelmä / Least Squares).
+     *
+     * Tarkoitus: Etsiä suora viiva (y = a + bx), joka kuvaa parhaiten
+     * satujen pituuden kehitystä ajan myötä.
      */
     fun buildTrendLineFromAverageLength(stats: List<WeeklyStats>): List<Point> {
-        if (stats.size < 2) return emptyList()
+        if (stats.size < 2) return emptyList() // Tarvitaan vähintään 2 pistettä viivaan
 
         val n = stats.size.toDouble()
         var sumX = 0.0
@@ -132,7 +142,8 @@ object StatsMathEngine {
         var sumXY = 0.0
         var sumX2 = 0.0
 
-        // Lasketaan summat regressiokaavaa varten: y = a + bx
+        // X = Aikajakson indeksi (0, 1, 2...)
+        // Y = Sadun keskimääräinen pituus
         stats.forEachIndexed { index, stat ->
             val x = index.toDouble()
             val y = stat.averageLength.toDouble()
@@ -142,14 +153,17 @@ object StatsMathEngine {
             sumX2 += (x * x)
         }
 
+        // Regressiokaavojen nimittäjä
         val denominator = (n * sumX2 - (sumX * sumX))
         if (denominator == 0.0) return emptyList()
 
-        // Lasketaan kulmakerroin (slope) ja vakiotermi (intercept)
+        // Lasketaan kulmakerroin (b) ja vakiotermi (a)
+        // Kaava: y = a + bx
         val slopeB = (n * sumXY - sumX * sumY) / denominator
         val interceptA = (sumY - slopeB * sumX) / n
 
-        // Käytetään mXparseria evaluoimaan pisteet trendiviivalle
+        // Käytetään mXparser-kirjastoa arvojen laskemiseen (hieman overkill tässä,
+        // mutta näyttää miten kirjastoa käytetään).
         val xArg = Argument("x")
         val expression = Expression("a + b*x", xArg)
         expression.addArguments(Argument("a", interceptA), Argument("b", slopeB))
@@ -157,29 +171,23 @@ object StatsMathEngine {
         val points = mutableListOf<Point>()
         for (i in stats.indices) {
             xArg.setArgumentValue(i.toDouble())
+            // Lasketaan Y-arvo (ennuste) jokaiselle X-kohdalle
             points.add(Point(i.toFloat(), expression.calculate().toFloat()))
         }
         return points
     }
 
-    /**
-     * Määrittää Y-akselin maksimikorkeuden aktiivisuuskuvaajalle.
-     */
+    // --- APUFUNKTIOT GRAAFIEN SKAALAUKSEEN ---
+
     fun computeMaxStoryCount(stats: List<WeeklyStats>): Int {
         return (stats.maxOfOrNull { it.storyCount } ?: 5) + 2
     }
 
-    /**
-     * Määrittää Y-akselin maksimikorkeuden pituuskuvaajalle.
-     */
     fun computeMaxAvgLength(stats: List<WeeklyStats>): Int {
         val safeMax = (stats.maxOfOrNull { it.averageLength } ?: 100) + 50
         return max(safeMax, 1)
     }
 
-    /**
-     * Apufunktio tyyliä vastaavan emojin hakemiseen.
-     */
     private fun getIconForStyle(style: String): String = when (style) {
         "EXCITING" -> "⚡"
         "CALMING" -> "😴"

@@ -22,6 +22,13 @@ import fi.antero.satumaa.R
 import fi.antero.satumaa.ui.viewmodel.stats.StatsUiState
 import kotlin.math.max
 
+/**
+ * Piirtää pylväsdiagrammin viikoittaisesta aktiivisuudesta.
+ *
+ * Käyttää YCharts-kirjastoa (`co.yml.charts`).
+ * X-akseli: Viikot (tai kuukaudet)
+ * Y-akseli: Luotujen satujen määrä
+ */
 @Composable
 fun WeeklyActivityChart(uiState: StatsUiState) {
     if (uiState.weeklyStats.isEmpty()) return
@@ -33,34 +40,37 @@ fun WeeklyActivityChart(uiState: StatsUiState) {
     // Formatointistringi (esim. "%1$d satua")
     val descFormat = stringResource(R.string.chart_bar_desc_format)
 
+    // 1. Muunnetaan sovelluksen data YCharts BarData -muotoon
     val realBars = uiState.weeklyStats.mapIndexed { index, stat ->
         BarData(
+            // X on juokseva numero, Y on satujen määrä
             point = Point(x = (index + 1).toFloat(), y = stat.storyCount.toFloat()),
-            color = Color(0xFF2E6B5B),
+            color = Color(0xFF2E6B5B), // Tummanvihreä
             label = stat.weekLabel,
-            description = String.format(descFormat, stat.storyCount)
+            description = String.format(descFormat, stat.storyCount) // Näkyy kun palkkia painetaan
         )
     }
 
+    // Lisätään tyhjät "spacerit" alkuun ja loppuun, jotta ensimmäinen ja viimeinen
+    // palkki eivät ole kiinni reunoissa. YChartsilla tämä on joskus tarpeen
+    // asettelun kaunistamiseksi.
     val spacerStart = BarData(
         point = Point(x = 0f, y = 0f),
-        color = Color.Transparent,
-        label = "",
-        description = ""
+        color = Color.Transparent, label = "", description = ""
     )
-
     val spacerEnd = BarData(
         point = Point(x = (realBars.size + 1).toFloat(), y = 0f),
-        color = Color.Transparent,
-        label = "",
-        description = ""
+        color = Color.Transparent, label = "", description = ""
     )
 
     val barData = listOf(spacerStart) + realBars + listOf(spacerEnd)
+
+    // Lasketaan X-akselin portaiden määrä
     val xSteps = max(barData.size - 1, 1)
 
+    // 2. Määritellään X-akseli
     val xAxisData = AxisData.Builder()
-        .axisStepSize(46.dp)
+        .axisStepSize(46.dp) // Palkkien väli
         .steps(xSteps)
         .bottomPadding(16.dp)
         .labelData { index -> barData.getOrNull(index)?.label ?: "" }
@@ -68,12 +78,16 @@ fun WeeklyActivityChart(uiState: StatsUiState) {
         .axisLineColor(fixedTextColor)
         .build()
 
+    // 3. Määritellään Y-akseli
+    // Skaalaus: Pyöristetään ylöspäin lähimpään viiteen
     val rawMax = max(uiState.maxStoryCount, 1)
     val maxY = ((rawMax + 4) / 5) * 5
 
     val yAxisData = AxisData.Builder()
         .steps(maxY)
         .labelAndAxisLinePadding(24.dp)
+        // Näytetään numerot vain joka viidennellä askeleella (0, 5, 10...)
+        // jotta akseli ei tukkeudu numeroista
         .labelData { index ->
             if (index % 5 == 0) index.toString() else ""
         }
@@ -81,6 +95,7 @@ fun WeeklyActivityChart(uiState: StatsUiState) {
         .axisLineColor(fixedTextColor)
         .build()
 
+    // 4. Määritellään itse kaavio
     val barChartData = BarChartData(
         chartData = barData,
         xAxisData = xAxisData,
@@ -92,15 +107,17 @@ fun WeeklyActivityChart(uiState: StatsUiState) {
         )
     )
 
+    // Lasketaan kaavion leveys dynaamisesti datamäärän mukaan
     val stepWidth = 46.dp
     val basePadding = 120.dp
     val desiredWidth = (barData.size * stepWidth.value).dp + basePadding
+    // Jos leveys on pienempi kuin näyttö, käytetään näytön leveyttä (täyttää ruudun)
     val chartWidth = if (desiredWidth > screenWidth) desiredWidth else screenWidth
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .horizontalScroll(scrollState)
+            .horizontalScroll(scrollState) // Mahdollistaa skrollauksen
     ) {
         BarChart(
             modifier = Modifier
