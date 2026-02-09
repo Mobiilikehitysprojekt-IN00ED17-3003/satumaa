@@ -1,9 +1,11 @@
 package fi.antero.satumaa.viewmodel.auth
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import fi.antero.satumaa.data.repository.AuthRepository
 import fi.antero.satumaa.util.toUserFriendlyMessage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val repository: AuthRepository
+    private val repository: AuthRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
@@ -36,7 +39,7 @@ class AuthViewModel @Inject constructor(
                     _uiState.value = AuthUiState.Success(user)
                 }
                 .onFailure { error ->
-                    _uiState.value = AuthUiState.Error(error.toUserFriendlyMessage())
+                    _uiState.value = AuthUiState.Error(error.toUserFriendlyMessage(context))
                 }
         }
     }
@@ -49,10 +52,8 @@ class AuthViewModel @Inject constructor(
                     _uiState.value = AuthUiState.Success(user)
                 }
                 .onFailure { error ->
-
                     Log.e("AuthViewModel", "Google Sign-In failed: ${error.message}")
-
-                    _uiState.value = AuthUiState.Error(error.toUserFriendlyMessage())
+                    _uiState.value = AuthUiState.Error(error.toUserFriendlyMessage(context))
                 }
         }
     }

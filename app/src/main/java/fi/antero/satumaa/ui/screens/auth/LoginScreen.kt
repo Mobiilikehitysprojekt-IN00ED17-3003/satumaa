@@ -80,11 +80,11 @@ fun LoginScreen(
                     viewModel.signInWithGoogle(idToken)
                 } else {
                     // Tekninen virhe -> Käyttäjäystävällinen viesti
-                    googleError = "AUTH_GOOGLE_TOKEN_MISSING".mapErrorToUserMessage()
+                    googleError = "AUTH_GOOGLE_TOKEN_MISSING".mapErrorToUserMessage(context)
                 }
             } catch (e: ApiException) {
                 Log.e("LoginScreen", "Google Sign-In failed", e)
-                googleError = "AUTH_GOOGLE_API_ERROR".mapErrorToUserMessage()
+                googleError = "AUTH_GOOGLE_API_ERROR".mapErrorToUserMessage(context)
             }
         }
     }

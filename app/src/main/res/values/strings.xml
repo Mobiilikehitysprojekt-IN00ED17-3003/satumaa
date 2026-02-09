@@ -115,4 +115,91 @@
     <string name="story_style_andersen">Andersen</string>
     <string name="story_style_grimm">Grimm</string>
     <string name="story_style_jansson">Muumimainen</string>
+
+    <string name="loading_default_text">Taikuutta ladataan...</string>
+
+    <string name="error_title_oops">Hupsista!</string>
+    <string name="error_retry_button">Yritä uudelleen</string>
+
+    <string name="nav_home">Koti</string>
+    <string name="nav_story">Satu</string>
+    <string name="nav_letter">Kirje</string>
+    <string name="nav_profile">Profiili</string>
+
+    <string name="topbar_default_title">Satumaa</string>
+    <string name="topbar_back_cd">Takaisin</string>
+    <string name="topbar_menu_cd">Valikko</string>
+    <string name="topbar_library_default">Omat sadut</string>
+    <string name="topbar_profile_label">Profiili</string>
+
+    <string name="error_connection">Yhteysongelma. Tarkista internetyhteytesi.</string>
+    <string name="error_generic">Jotain meni pieleen. Yritä uudelleen.</string>
+    <string name="error_unknown">Tuntematon virhe.</string>
+
+    <string name="error_story_keywords_empty">Kirjoita ainakin yksi taikasana!</string>
+    <string name="error_story_not_found">Hups! Satua ei löytynyt kirjastosta.</string>
+    <string name="error_empty_response">Taikuus epäonnistui: Palvelin ei palauttanut satua.</string>
+    <string name="error_save_id_missing">Satu tallentui pilveen, mutta sen tunnistetta ei saatu.</string>
+    <string name="error_network_generic">Verkkovirhe. Tarkista, että puhelimesi on yhdistetty internetiin.</string>
+
+    <string name="error_auth_google_token">Google-kirjautuminen epäonnistui: Tunniste puuttuu.</string>
+    <string name="error_auth_google_api">Yhteys Google-tiliin epäonnistui. Yritä uudelleen.</string>
+    <string name="error_auth_user_null">Kirjautuminen epäonnistui: Käyttäjätietoja ei saatu.</string>
+    <string name="error_auth_anonymous">Pikakirjautuminen epäonnistui. Kokeile uudelleen.</string>
+
+    <string name="error_rate_limit_story">Voit taikoa vain yhden sadun minuutissa. Odota hetki.</string>
+    <string name="error_rate_limit_save">Tallennat liian nopeasti. Odota hetki.</string>
+    <string name="error_storage_full">Kirjahylly on täynnä (20/20). Poista vanhoja satuja ensin.</string>
+    <string name="error_preview_expired">Esikatselu vanhentui. Luo satu uudelleen.</string>
+    <string name="error_content_mismatch">Satu muuttui matkalla. Yritä tallennusta uudelleen.</string>
+    <string name="error_invalid_input">Tarkista syöttämäsi nimi tai aiheet.</string>
+
+    <string name="error_mailbox_full">Postilaatikko on täynnä (10/10). Poista vanhoja kirjeitä ensin.</string>
+    <string name="error_letter_too_long">Kirje on liian pitkä. Lyhennä sitä hieman.</string>
+    <string name="error_rate_limit_letter">Pukki ehtii lukea vain yhden kirjeen minuutissa.</string>
+    <string name="error_gemini_busy">Pukilla on kova kiire juuri nyt. Yritä hetken päästä uudelleen.</string>
+
+    <string name="error_auth_invalid_cred">Virheellinen sähköposti tai salasana.</string>
+    <string name="error_auth_invalid_user">Käyttäjätiliä ei löydy tai se on poistettu.</string>
+    <string name="error_auth_collision">Tällä sähköpostilla on jo tili.</string>
+    <string name="error_auth_weak_password">Salasana on liian heikko.</string>
+    <string name="error_auth_blocked">Tili on estetty väliaikaisesti liian monen yrityksen vuoksi.</string>
+    <string name="error_timeout">Pyyntö aikakatkaistiin. Palvelin vastaa hitaasti.</string>
+    <string name="error_auth_required">Toiminto vaatii kirjautumisen.</string>
+
+    <string name="math_title_main">Tilastot &amp; Taika</string>
+    <string name="math_status_loading">Lasketaan taikapölyä...</string>
+    <string name="math_status_empty">Ei vielä satuja analysoitavaksi.\nLuo ensimmäinen satusi!</string>
+
+    <string name="math_card_activity_title">Satutehtaan aktiivisuus</string>
+    <string name="math_card_activity_desc">Kuinka monta satua olemme luoneet?</string>
+
+    <string name="math_card_keywords_title">Taikasanojen voima</string>
+    <string name="math_card_keywords_desc">Mitkä taikasanat toistuvat useiten?</string>
+
+    <string name="math_card_trend_title">Tarinoiden pituus &amp; Trendi</string>
+    <string name="math_card_trend_desc">Kasvaako tarinoiden pituus ajan myötä?</string>
+    <string name="math_trend_legend">Punainen viiva = Matemaattinen trendi (PNS)</string>
+
+    <string name="math_card_adventure_title">Seikkailumittari</string>
+    <string name="math_card_adventure_desc">Analyysi sadun pituuden ja jännityksen suhteesta</string>
+
+    <string name="math_adventure_tooltip">Paina kuvakkeita nähdäksesi pisteet!</string>
+    <string name="math_adventure_info_title">Miten pisteet lasketaan?</string>
+    <string name="math_adventure_info_desc">Algoritmi etsii jännitystä kuvaavia sanoja (kuten lohikäärme, miekka, aarre, sankari jne) ja huutomerkkejä. Pisteet suhteutetaan sadun pituuteen.</string>
+    <string name="math_adventure_axis_legend">X-akseli: Sanamäärä (pituus)\nY-akseli: Seikkailuindeksi (voimakkuus)</string>
+
+    <string name="chart_word_count">Sanamäärä</string>
+    <string name="chart_adventure_index">Seikkailuindeksi</string>
+    <string name="chart_points_label">Pisteet: %1$d | Sanat: %2$d</string>
+
+    <string name="chart_pie_center_default">Top 5</string>
+    <string name="chart_pie_click_hint">Klikkaa osioita</string>
+    <string name="chart_pie_count_format">%1$d kpl (%2$d%%)</string>
+
+    <string name="chart_trend_xaxis">Aika (Viikkoa)</string>
+    <string name="chart_trend_yaxis">Keskimääräinen sanamäärä</string>
+
+    <string name="chart_bar_desc_format">%1$d satua</string>
+
 </resources>

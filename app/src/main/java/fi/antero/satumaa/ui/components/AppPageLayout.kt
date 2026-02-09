@@ -11,6 +11,9 @@ import androidx.compose.ui.res.painterResource
 /**
  * Sovelluksen perusulkoasu (Layout).
  *
+ * Hoitaa taustakuvan piirtämisen ja Scaffoldin asettelun.
+ * Mahdollistaa joko staattisen kuvaresurssin tai kustomoidun taustakomponentin käytön.
+ *
  * @param backgroundImageRes (Valinnainen) Taustakuvan resurssi-ID. Käytetään oletustaustana, jos 'background' on tyhjä.
  * @param background (Valinnainen) Kustomoitu taustakomponentti (esim. LetterListBackground). Ohittaa backgroundImageRes:n.
  * @param topBar Yläpalkki.
@@ -19,13 +22,13 @@ import androidx.compose.ui.res.painterResource
  */
 @Composable
 fun AppPageLayout(
-    backgroundImageRes: Int? = null, // Muutettu nullableksi
+    backgroundImageRes: Int? = null,
     background: @Composable () -> Unit = {
         // Oletustoteutus: Jos resurssi-ID on annettu, piirretään kuva.
         if (backgroundImageRes != null) {
             Image(
                 painter = painterResource(id = backgroundImageRes),
-                contentDescription = null,
+                contentDescription = null, // Dekoratiivinen tausta
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
@@ -44,7 +47,7 @@ fun AppPageLayout(
             // 1. Piirretään tausta (joko kuva tai kustomoitu komponentti)
             background()
 
-            // 2. Piirretään sisältö
+            // 2. Piirretään sisältö (Scaffold antaa paddingin, joka huomioi top/bottom barit)
             content(padding)
         }
     }

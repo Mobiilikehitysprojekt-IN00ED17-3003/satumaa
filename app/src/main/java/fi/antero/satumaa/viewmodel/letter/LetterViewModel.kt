@@ -1,8 +1,10 @@
 package fi.antero.satumaa.viewmodel.letter
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import fi.antero.satumaa.data.model.Letter
 import fi.antero.satumaa.data.repository.LetterRepository
 import fi.antero.satumaa.data.repository.LocationRepository
@@ -24,7 +26,8 @@ import javax.inject.Inject
 @HiltViewModel
 class LetterViewModel @Inject constructor(
     private val repo: LetterRepository,
-    private val locationRepo: LocationRepository
+    private val locationRepo: LocationRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LetterUiState())
@@ -168,7 +171,7 @@ class LetterViewModel @Inject constructor(
                 replyText = letter.replyText,
                 sentText = letter.letterText,
                 isSending = false,
-                error = if (letter.status == "error") letter.errorMessage.mapErrorToUserMessage() else null,
+                error = if (letter.status == "error") letter.errorMessage.mapErrorToUserMessage(context) else null,
                 showReplyArrived = if (finalStatus == "replying") false else (it.showReplyArrived || showArrived),
                 isOpened = isOpened,
                 isNewLetterMode = false,
@@ -359,7 +362,7 @@ class LetterViewModel @Inject constructor(
             }
 
             result.onFailure { e ->
-                _uiState.update { it.copy(isSending = false, error = e.toUserFriendlyMessage()) }
+                _uiState.update { it.copy(isSending = false, error = e.toUserFriendlyMessage(context)) }
             }
         }
     }

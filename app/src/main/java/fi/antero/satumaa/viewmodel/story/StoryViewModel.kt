@@ -1,8 +1,10 @@
 package fi.antero.satumaa.ui.viewmodel.story
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import fi.antero.satumaa.data.repository.StoryRepository
 import fi.antero.satumaa.ui.components.story.create.StoryLength
 import fi.antero.satumaa.ui.components.story.create.StoryStyle
@@ -19,7 +21,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class StoryViewModel @Inject constructor(
-    private val repository: StoryRepository
+    private val repository: StoryRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     // UI-tila (Idle, Loading, Success, Error)
@@ -49,7 +52,7 @@ class StoryViewModel @Inject constructor(
             // Tarkistetaan, onko avainsanoja
             if (keywords.isEmpty()) {
                 // Käytetään teknistä virhekoodia, jonka ErrorUtils kääntää käyttäjäystävälliseksi
-                _uiState.value = StoryUiState.Error(Exception("STORY_KEYWORDS_EMPTY").toUserFriendlyMessage())
+                _uiState.value = StoryUiState.Error(Exception("STORY_KEYWORDS_EMPTY").toUserFriendlyMessage(context))
                 return@launch
             }
 
@@ -66,7 +69,7 @@ class StoryViewModel @Inject constructor(
             result.onSuccess { previewStory ->
                 _uiState.value = StoryUiState.Success(previewStory)
             }.onFailure { e ->
-                _uiState.value = StoryUiState.Error(e.toUserFriendlyMessage())
+                _uiState.value = StoryUiState.Error(e.toUserFriendlyMessage(context))
             }
         }
     }
@@ -91,7 +94,7 @@ class StoryViewModel @Inject constructor(
                     val savedStory = storyToSave.copy(id = newId)
                     _uiState.value = StoryUiState.Success(savedStory)
                 }.onFailure { e ->
-                    _uiState.value = StoryUiState.Error(e.toUserFriendlyMessage())
+                    _uiState.value = StoryUiState.Error(e.toUserFriendlyMessage(context))
                 }
             }
         }
@@ -108,10 +111,10 @@ class StoryViewModel @Inject constructor(
                 if (story != null) {
                     _uiState.value = StoryUiState.Success(story)
                 } else {
-                    _uiState.value = StoryUiState.Error(Exception("STORY_NOT_FOUND").toUserFriendlyMessage())
+                    _uiState.value = StoryUiState.Error(Exception("STORY_NOT_FOUND").toUserFriendlyMessage(context))
                 }
             } catch (e: Exception) {
-                _uiState.value = StoryUiState.Error(e.toUserFriendlyMessage())
+                _uiState.value = StoryUiState.Error(e.toUserFriendlyMessage(context))
             }
         }
     }
