@@ -1,10 +1,11 @@
 # ✨ Satumaa
 
-MVVM-arkkitehtuurilla varustettu, Kotlin ohjelmointikielellä ja Jetpack Composea hyödyntäen rakennettu satukirja-mobiilisovellus, joka tarjoaa ainutlaatuisia hetkiä satujen parissa sekä jännittävän tavan olla yhteydessä Joulupukkiin.  
-Firebase huolehtii käyttäjähallinnasta, datan synkronoinnista ja reaaliaikaisista ilmoituksista. Sovellus hyödyntää mm. Hilt-riippuvuuksien injektiota, Room-tietokantaa, sekä OSMdroid-karttakirjastoa.
+**MVVM-arkkitehtuurilla** varustettu, **Kotlin** ohjelmointikielellä ja **Jetpack Composea** hyödyntäen rakennettu satukirja-mobiilisovellus, joka tarjoaa ainutlaatuisia hetkiä satujen parissa sekä jännittävän tavan olla yhteydessä Joulupukkiin.  
+**Firebase** huolehtii käyttäjähallinnasta, datan synkronoinnista ja reaaliaikaisista ilmoituksista. Sovellus hyödyntää mm. **Hilt-riippuvuuksien injektiota**, **Room-tietokantaa**, sekä **OSMdroid-karttakirjastoa**.
 
 <img width="419" height="899" alt="Näyttökuva 2026-02-10 182314" src="https://github.com/user-attachments/assets/3d1f2b17-9783-4cca-b210-2059690708f0" />
 
+___
 📖 1. Projektin perustiedot
 -
 | Kenttä | Selitys |
@@ -18,7 +19,7 @@ Firebase huolehtii käyttäjähallinnasta, datan synkronoinnista ja reaaliaikais
 | GitHub Projects (URL)  | https://github.com/orgs/Mobiilikehitysprojekt-IN00ED17-3003/projects/1  |
 | Lyhyt kuvaus ideasta (2–4 riviä)  | Luo monipuolisia ja uniikkeja satuja tekoälyn generoimana avainsanojen avulla. Suosikkisadut voi tallentaa omaan kirjastoon myöhempiä lukuhetkiä varten. Käyttäjä voi myös kirjoittaa ja lähettää kirjeen Joulupukille. Kirjeen matkaa voi seurata reaaliajassa OpenStreetMap-kartalla. Kun käyttäjä saa ilmoituksen vastauksesta, vastauskirjeen avaaminen vaatii pienen tehtävän ratkaisemista tai vastauskirjeen etsimistä ympäristöstä puhelimen kameran avulla. |
 
-
+___
 📝 2. Pakolliset palautukset / Documents
 -
 Tästä osiosta löytyvät linkit projektin virallisiin dokumentteihin ja esityksiin:  
@@ -29,7 +30,7 @@ Tästä osiosta löytyvät linkit projektin virallisiin dokumentteihin ja esityk
 2.5 Advanced Mobile -video: [Linkki videoon]  
 2.6 Scrum-muistio: [Linkki muistioon]
 
-
+___
 🎯 3. Scrum & GitHub Projects -näyttö
 -
 Projektinhallinta on toteutettu GitHub Projects -työkalulla: https://github.com/orgs/Mobiilikehitysprojekt-IN00ED17-3003/projects/1
@@ -48,7 +49,7 @@ Projektinhallinta on toteutettu GitHub Projects -työkalulla: https://github.com
 
 3.6 Scrum Review -osallistumiset: Ryhmä on osallistunut säännöllisiin katselmointiin.
 
-
+___
 ⚙️ 4. Projekti-ominaisuudet
 -
 4.1 HTTP / avoin API + listaus + detalji + haku/suodatus + lataus/virhetilat
@@ -71,7 +72,7 @@ Projektinhallinta on toteutettu GitHub Projects -työkalulla: https://github.com
 
 4.10 Vapaa vaativa ominaisuus (opettajan hyväksymä) – kuvaa tarkasti
 
-
+___
 🖼 5. Projekti – UI/UX & navigaatio
 -
 5.1 Näkymät + navigaatio (väh. 3 näkymää, järkevä polku) 
@@ -82,7 +83,7 @@ Projektinhallinta on toteutettu GitHub Projects -työkalulla: https://github.com
 
 5.4 Viimeistely: responsiivisuus/landscape/tablet tms.
 
-
+___
 📚 6. Projekti – arkkitehtuuri & koodin laatu
 -
 6.1 Selkeä kerrosjako (MVVM tai vastaava) 
@@ -91,7 +92,7 @@ Projektinhallinta on toteutettu GitHub Projects -työkalulla: https://github.com
 
 6.3 Luettava koodi (nimeäminen, komponentointi, ei turhaa toistoa)
 
-
+___
 🚀 7. Advanced Mobile -osuus
 -
 7.1 Aihe & opetusrunko (mikä/miksi/miten) 
@@ -106,7 +107,7 @@ Projektinhallinta on toteutettu GitHub Projects -työkalulla: https://github.com
 
 7.6 BONUS: Advanced-aihe integroituna myös varsinaiseen projektiin
 
-
+___
 ⭐ 8. Bonukset
 -
 8.1 Projekti: poikkeuksellisen hyvä viimeistely (UX, virhetilat, tyhjätilat, demo) 
