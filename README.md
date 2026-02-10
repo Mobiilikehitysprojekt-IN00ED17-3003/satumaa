@@ -1,6 +1,7 @@
 # ✨ Satumaa
 
-MVVM-arkkitehtuurilla varustettu, Kotlin ohjelmointikielellä ja Jetpack Composea hyödyntäen rakennettu satukirja-mobiilisovellus, joka tarjoaa ainutlaatuisia hetkiä satujen parissa sekä jännittävän tavan olla yhteydessä Joulupukkiin.
+MVVM-arkkitehtuurilla varustettu, Kotlin ohjelmointikielellä ja Jetpack Composea hyödyntäen rakennettu satukirja-mobiilisovellus, joka tarjoaa ainutlaatuisia hetkiä satujen parissa sekä jännittävän tavan olla yhteydessä Joulupukkiin.  
+Firebase huolehtii käyttäjähallinnasta, datan synkronoinnista ja reaaliaikaisista ilmoituksista. Sovellus hyödyntää mm. Hilt-riippuvuuksien injektiota, Room-tietokantaa, sekä OSMdroid-karttakirjastoa.
 
 📖 1. Projektin perustiedot
 -
@@ -13,7 +14,7 @@ MVVM-arkkitehtuurilla varustettu, Kotlin ohjelmointikielellä ja Jetpack Compose
 | Sovelluksen nimi | Satumaa |
 | GitHub-repo (julkinen URL)  | https://github.com/Mobiilikehitysprojekt-IN00ED17-3003/satumaa  |
 | GitHub Projects (URL)  | https://github.com/orgs/Mobiilikehitysprojekt-IN00ED17-3003/projects/1  |
-| Lyhyt kuvaus ideasta (2–4 riviä)  |  |
+| Lyhyt kuvaus ideasta (2–4 riviä)  | Luo monipuolisia ja uniikkeja satuja tekoälyn generoimana avainsanojen avulla. Suosikkisadut voi tallentaa omaan kirjastoon myöhempiä lukuhetkiä varten. Käyttäjä voi myös kirjoittaa ja lähettää kirjeen Joulupukille. Kirjeen matkaa voi seurata reaaliajassa OpenStreetMap-kartalla. Kun käyttäjä saa ilmoituksen vastauksesta, vastauskirjeen avaaminen vaatii pienen tehtävän ratkaisemista tai vastauskirjeen etsimistä ympäristöstä puhelimen kameran avulla. |
 
 
 📝 2. Pakolliset palautukset / Documents
