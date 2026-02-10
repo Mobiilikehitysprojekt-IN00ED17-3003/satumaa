@@ -3,6 +3,8 @@
 MVVM-arkkitehtuurilla varustettu, Kotlin ohjelmointikielellä ja Jetpack Composea hyödyntäen rakennettu satukirja-mobiilisovellus, joka tarjoaa ainutlaatuisia hetkiä satujen parissa sekä jännittävän tavan olla yhteydessä Joulupukkiin.  
 Firebase huolehtii käyttäjähallinnasta, datan synkronoinnista ja reaaliaikaisista ilmoituksista. Sovellus hyödyntää mm. Hilt-riippuvuuksien injektiota, Room-tietokantaa, sekä OSMdroid-karttakirjastoa.
 
+<img width="419" height="899" alt="Näyttökuva 2026-02-10 182314" src="https://github.com/user-attachments/assets/3d1f2b17-9783-4cca-b210-2059690708f0" />
+
 📖 1. Projektin perustiedot
 -
 | Kenttä | Selitys |
@@ -30,9 +32,11 @@ Tästä osiosta löytyvät linkit projektin virallisiin dokumentteihin ja esityk
 
 🎯 3. Scrum & GitHub Projects -näyttö
 -
-Projektinhallinta on toteutettu GitHub Projects -työkalulla:
+Projektinhallinta on toteutettu GitHub Projects -työkalulla: https://github.com/orgs/Mobiilikehitysprojekt-IN00ED17-3003/projects/1
 
 3.1 Sprintit nimettynä: Projektissa on käytetty selkeitä sprinttejä.
+<img width="1602" height="852" alt="Näyttökuva 2026-02-10 180654 (2)" src="https://github.com/user-attachments/assets/89265889-78a6-4df2-a31a-626947a31a03" />
+
 
 3.2 Tehtävät pilkottu: Backlog on jaettu pieniin, hallittaviin tehtäviin.
 
