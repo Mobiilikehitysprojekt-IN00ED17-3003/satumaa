@@ -171,7 +171,7 @@ fun StoryScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Generointipainike ("TAIO SATU!")
+                // Generointipainike
                 Button(
                     onClick = {
                         keyboardController?.hide()
