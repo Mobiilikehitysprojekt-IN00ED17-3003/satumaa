@@ -41,10 +41,16 @@ Projektinhallinta on toteutettu GitHub Projects -työkalulla: https://github.com
 
 
 3.2 Tehtävät pilkottu: Backlog on jaettu pieniin, hallittaviin tehtäviin.
+<img width="1602" height="852" alt="Näyttökuva 2026-02-10 180654 backlog" src="https://github.com/user-attachments/assets/98ed56ea-2523-487e-a916-03d9832d9a5b" />
+
 
 3.3 Tehtävissä assigneet: Jokaisella tehtävällä on nimetty vastuuhenkilö.
+<img width="1602" height="852" alt="Näyttökuva 2026-02-10 180654 assignees" src="https://github.com/user-attachments/assets/3ac99391-9204-46b9-9879-16a67ebf1dd0" />
+
 
 3.4 Kanban elää: GitHub Projects Kanban-taulua on päivitetty reaaliajassa kehityksen aikana.
+<img width="1433" height="1060" alt="Näyttökuva 2026-02-11 163246" src="https://github.com/user-attachments/assets/c4e52d60-79ba-4ef9-a784-ebaa3bc62462" />
+
 
 3.5 Sprint Planning: Suunnittelupalaverit on pidetty ennen jokaista Review-vaihetta.
 
