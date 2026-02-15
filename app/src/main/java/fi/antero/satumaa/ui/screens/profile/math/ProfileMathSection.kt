@@ -26,21 +26,32 @@ import fi.antero.satumaa.R
 import fi.antero.satumaa.ui.screens.profile.math.components.*
 import fi.antero.satumaa.ui.viewmodel.stats.StatsViewModel
 
+/**
+ * TÄMÄ ON PÄÄNÄKYMÄ (Container).
+ *
+ * Tämä Composable kokoaa kaikki erilliset graafikomponentit yhdeksi
+ * skrollattavaksi listaksi. Se toimii "liimana" ViewModelin ja UI-komponenttien välillä.
+ */
 @Composable
 fun ProfileMathSection(
+    // Hilt syöttää ViewModelin automaattisesti tähän.
     viewModel: StatsViewModel = hiltViewModel()
 ) {
+    // 1. TILAN KUUNTELU (State Collection)
+    // Kerätään data ViewModelista. 'collectAsState' varmistaa, että kun
+    // laskenta valmistuu (isLoading muuttuu falseksi), tämä ruutu piirretään uudelleen.
     val uiState by viewModel.uiState.collectAsState()
     val timeRange by viewModel.timeRange.collectAsState()
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp), // Välit korttien välillä
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // --- OTSIKKO ---
         // Otsikko varjolla (Valkoinen teksti, musta varjo takaa näkyvyyden kaikilla taustoilla)
         Text(
-            text = stringResource(R.string.math_title_main),
+            text = stringResource(R.string.math_title_main), // "Satumainen Matematiikka"
             style = MaterialTheme.typography.headlineMedium.copy(
                 shadow = Shadow(
                     color = Color.Black.copy(alpha = 0.5f),
@@ -53,47 +64,67 @@ fun ProfileMathSection(
             textAlign = TextAlign.Center
         )
 
+        // --- TILAN HALLINTA (Loading / Empty / Content) ---
+
         if (uiState.isLoading) {
+            // TILA A: Lasketaan vielä...
             Text(
                 stringResource(R.string.math_status_loading),
                 color = Color(0xFFFFF3E6),
                 style = MaterialTheme.typography.bodyLarge
             )
         } else if (uiState.totalStories == 0) {
+            // TILA B: Ei yhtään satua tietokannassa
             Text(
                 stringResource(R.string.math_status_empty),
                 color = Color(0xFFFFF3E6),
                 textAlign = TextAlign.Center
             )
         } else {
-            // 1. Aktiivisuus
+            // TILA C: Data on valmista -> Piirretään kortit
+
+            // ---------------------------------------------------------
+            // KORTTI 1: AKTIIVISUUS (WeeklyActivityChart)
+            // ---------------------------------------------------------
             MathCard(
-                title = stringResource(R.string.math_card_activity_title),
-                description = stringResource(R.string.math_card_activity_desc)
+                title = stringResource(R.string.math_card_activity_title), // "Luomisaktiivisuus"
+                description = stringResource(R.string.math_card_activity_desc) // "Kuinka monta satua..."
             ) {
+                // Aikajänteen valitsin (Viikko / Kuukausi)
+                // Kun tätä painetaan, kutsumme ViewModelia -> Data lasketaan uudelleen -> UI päivittyy
                 TimeRangeSelector(
                     currentRange = timeRange,
                     onRangeSelected = { viewModel.setTimeRange(it) }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // Itse Pylväsdiagrammi-komponentti
                 WeeklyActivityChart(uiState = uiState)
             }
 
-            // 2. Mieltymykset
+            // ---------------------------------------------------------
+            // KORTTI 2: MIELTYMYKSET (KeywordsPieChart)
+            // ---------------------------------------------------------
             MathCard(
-                title = stringResource(R.string.math_card_keywords_title),
+                title = stringResource(R.string.math_card_keywords_title), // "Suosituimmat aiheet"
                 description = stringResource(R.string.math_card_keywords_desc)
             ) {
+                // Itse Donitsikaavio-komponentti
                 KeywordsPieChart(uiState = uiState)
             }
 
-            // 3. Kehitys
+            // ---------------------------------------------------------
+            // KORTTI 3: KEHITYS (TrendCombinedChart)
+            // ---------------------------------------------------------
             MathCard(
-                title = stringResource(R.string.math_card_trend_title),
+                title = stringResource(R.string.math_card_trend_title), // "Tarinoiden pituus"
                 description = stringResource(R.string.math_card_trend_desc)
             ) {
+                // Pylväät + Punainen trendiviiva
                 TrendCombinedChart(uiState = uiState)
+
                 Spacer(modifier = Modifier.height(12.dp))
+                // Pieni seliteteksti graafin alle
                 Text(
                     text = stringResource(R.string.math_trend_legend),
                     style = MaterialTheme.typography.bodySmall,
@@ -103,11 +134,14 @@ fun ProfileMathSection(
                 )
             }
 
-            // 4. Seikkailumittari
+            // ---------------------------------------------------------
+            // KORTTI 4: SEIKKAILUMITTARI (AdventureScatterChart)
+            // ---------------------------------------------------------
             MathCard(
-                title = stringResource(R.string.math_card_adventure_title),
+                title = stringResource(R.string.math_card_adventure_title), // "Seikkailuindeksi"
                 description = stringResource(R.string.math_card_adventure_desc)
             ) {
+                // Ohjeteksti ylhäällä
                 Text(
                     text = stringResource(R.string.math_adventure_tooltip),
                     style = MaterialTheme.typography.labelMedium,
@@ -119,6 +153,7 @@ fun ProfileMathSection(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // Tietolaatikko, joka selittää miten pisteet lasketaan
                 Surface(
                     color = Color.Black.copy(alpha = 0.05f),
                     shape = RoundedCornerShape(8.dp),
@@ -126,7 +161,7 @@ fun ProfileMathSection(
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            text = stringResource(R.string.math_adventure_info_title),
+                            text = stringResource(R.string.math_adventure_info_title), // "Miten tämä toimii?"
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF1B1B1F)
@@ -142,8 +177,9 @@ fun ProfileMathSection(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Akselien selitteet
                 Text(
-                    text = stringResource(R.string.math_adventure_axis_legend),
+                    text = stringResource(R.string.math_adventure_axis_legend), // "X = Pituus, Y = Jännitys"
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     textAlign = TextAlign.Center,
@@ -152,6 +188,7 @@ fun ProfileMathSection(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Itse Hajakuvaaja (Scatter Plot)
                 Box(modifier = Modifier.fillMaxWidth().height(320.dp)) {
                     AdventureScatterChart(uiState = uiState)
                 }
@@ -160,6 +197,14 @@ fun ProfileMathSection(
     }
 }
 
+/**
+ * APUKOMPONENTTI: Tyylitelty kortti
+ *
+ * Tämä pitää pääkoodin siistinä. Sen sijaan että määrittelisimme Cardin
+ * värit ja varjot 4 kertaa uudestaan, teemme sen tässä kerran.
+ *
+ * @param content Lambda-funktio, johon itse graafi sijoitetaan ("Slot API")
+ */
 @Composable
 fun MathCard(
     title: String,
@@ -168,7 +213,7 @@ fun MathCard(
 ) {
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFFF3E6).copy(alpha = 0.9f)
+            containerColor = Color(0xFFFFF3E6).copy(alpha = 0.9f) // Hieman läpinäkyvä "paperi"
         ),
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
@@ -177,6 +222,7 @@ fun MathCard(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Kortin otsikko
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
@@ -185,6 +231,7 @@ fun MathCard(
                 textAlign = TextAlign.Center
             )
 
+            // Valinnainen kuvausteksti
             if (description != null) {
                 Text(
                     text = description,
@@ -196,6 +243,8 @@ fun MathCard(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Tähän renderöidään graafi, joka annettiin parametrina
             content()
         }
     }
