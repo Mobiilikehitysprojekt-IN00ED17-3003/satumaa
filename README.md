@@ -23,9 +23,9 @@ Satumaa antaa vallan lukijalle. **Gemini AI** -integraation avulla käyttäjät 
 ### 🌟 Visio alustasta: Joustava pohja uusille ideoille
 Satumaa on rakennettu skaalautuvaksi ekosysteemiksi. Nyt toteutettu Joulupukki-moduuli on **ensimmäinen esimerkki (Proof of Concept)** siitä, miten sovellus voi laajentua perinteisen lukemisen ulkopuolelle. Tekninen runko mahdollistaa monipuolisen jatkokehityksen:
 
-* **Vaihtuvat teemamaailmat:** Alusta tukee uusien sisältökokonaisuuksien lisäämistä – oli kyseessä sitten pääsiäisseikkailu tai avaruusmatka, uusi sisältö voidaan tuoda sovellukseen modulaarisesti.
+* **Vaihtuvat teemamaailmat:** Alusta tukee uusien sisältökokonaisuuksien lisäämistä – oli kyseessä sitten pääsiäisseikkailu tai avaruusmatka, uusi sisältö voidaan tuoda sovellukseen joustavasti.
 * **Pelillisyys ja oppiminen:** Sovelluksen rakenne mahdollistaa erilaisten vuorovaikutteisten elementtien, kuten tehtävien tai minipelien, integroimisen osaksi tarinankerrontaa.
-* **Skaalautuva sisältö:** Nykyinen arkkitehtuuri on valmis vastaanottamaan rajattomasti uusia tarinoita ja ominaisuuksia ilman koko sovelluksen uudelleenrakentamista.
+* **Kehittyvä arkkitehtuuri:** Nykyinen Clean Architecture -pohja varmistaa koodin selkeän vastuunjaon, luoden perustan **modulaariselle rakenteelle**. Sovellus on suunniteltu siten, että sisällön kasvaessa voidaan siirtyä kerrosarkkitehtuurista (Layer-based) kohti **ominaisuuspohjaista monimoduuliarkkitehtuuria (Feature-based Multi-module)**. Tämä mahdollistaa uusien teemojen eriyttämisen itsenäisiksi kokonaisuuksiksi, mikä pitää kehityksen ketteränä myös satojen uusien ominaisuuksien mittakaavassa.
 
 ---
 
