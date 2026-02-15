@@ -1,7 +1,38 @@
-# ✨ Satumaa
+# ✨ Satumaa – Missä teknologia kohtaa tarinat
 
-**MVVM-arkkitehtuurilla** varustettu, **Kotlin** ohjelmointikielellä ja **Jetpack Composea** hyödyntäen rakennettu satukirja-mobiilisovellus, joka tarjoaa ainutlaatuisia hetkiä satujen parissa sekä jännittävän tavan olla yhteydessä Joulupukkiin.  
-**Firebase** huolehtii käyttäjähallinnasta, datan synkronoinnista ja reaaliaikaisista ilmoituksista. Sovellus hyödyntää mm. **Hilt-riippuvuuksien injektiota**, **Room-tietokantaa**, sekä **OSMdroid-karttakirjastoa**.
+**Satumaa** on moderni, **MVVM-arkkitehtuurilla** ja **Kotlinilla** toteutettu mobiilisovellus, joka on rakennettu **Jetpack Composen** deklaratiiviseen maailmaan. Se ei ole vain digitaalinen satukirja, vaan kokonaisvaltainen elämysalusta, joka yhdistää generatiivisen tekoälyn, reaaliaikaisen paikkatietoviestinnän ja lisätyn todellisuuden elementit saumattomaksi kokonaisuudeksi.
+
+---
+
+### 🚀 Tekninen ydin ja arkkitehtuuri
+Sovelluksen selkärankana toimii **Firebase-ekosysteemi**, joka huolehtii käyttäjähallinnasta, pilvisynkronoinnista ja reaaliaikaisista ilmoituksista. Clean Architecture -periaatteita noudattaen olemme hyödyntäneet:
+
+* **Hilt-riippuvuuksien injektiota:** Varmistamaan koodin testattavuuden ja modulaarisuuden.
+* **Offline First -periaatetta:** Paikallinen **Room-tietokanta** toimii sovelluksen ensisijaisena tietolähteenä, taaten salamannopean käyttökokemuksen myös ilman verkkoyhteyttä.
+* **WorkManager-integraatiota:** Huolehtimaan kriittisistä taustatehtävistä ja datan eheyden varmistamisesta.
+
+---
+
+### 📖 Satujen uusi sukupolvi
+Satumaa antaa vallan lukijalle. **Gemini AI** -integraation avulla käyttäjät voivat generoida täysin uniikkeja, personoituja satuja pelkkien avainsanojen perusteella. Tekoäly on valjastettu toimimaan turvallisena virtuaalisena satukirjailijana, joka luo **kokijan nimeen** ja valittuihin teemoihin pohjautuvia tarinoita hetkessä.
+
+---
+
+### 🎅 Maaginen yhteys Joulupukkiin
+Sovellus vie vuorovaikutuksen uudelle tasolle Joulupukki-moduulin kautta:
+
+* **Reaaliaikainen seuranta:** Lähetettyäsi kirjeen Korvatunturille, voit seurata sen matkaa lumisella kartalla **OSMdroid-kirjaston** ja GPS-paikannuksen avulla.
+* **Lisätty todellisuus (AR):** Joulupukin vastaus ei vain ilmesty ruudulle – se on löydettävä. Hyödyntämällä puhelimen kiihtyvyysantureita, suuntavektoreita ja **CameraX-rajapintaa**, sovellus luo AR-kokemuksen, jossa vastauskirje on piilotettu käyttäjän fyysiseen ympäristöön.
+* **Älykkäät notifikaatiot:** Sovelluksen taustalla toimivat reaktiiviset tarkkailijat ilmoittavat heti, kun maaginen vastaus on saapunut perille.
+
+---
+
+### 📊 Analyyttinen ote luovuuteen
+Satumaa ei ainoastaan luo tarinoita, vaan se myös analysoi niitä. Sisäänrakennettu **laskentayksikkö (StatsMathEngine)** seuraa sanavaraston kehitystä lineaarisen regression avulla ja pisteyttää tarinoiden jännitystason uniikilla seikkailuindeksillä, tarjoten visualisoitua tietoa harrastuksen edistymisestä.
+
+
+
+**Satumaa on enemmän kuin sovellus – se on silta perinteisen tarinankerronnan ja tulevaisuuden teknologian välillä.**
 
 
 <img width="405" height="899" alt="Näyttökuva 2026-02-10 182314" src="https://github.com/user-attachments/assets/3d1f2b17-9783-4cca-b210-2059690708f0" /> <img width="405" height="899" alt="Näyttökuva 2026-02-10 214315" src="https://github.com/user-attachments/assets/451c3c07-a900-4d6b-8204-2cb30771833c" />
