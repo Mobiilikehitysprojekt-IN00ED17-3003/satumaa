@@ -85,11 +85,11 @@ object NotificationHelper {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // Varmista, että tämä resurssi on olemassa
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(context.getString(R.string.notif_title))
             .setContentText(context.getString(R.string.notif_body))
             .setContentIntent(pendingIntent)
-            .setAutoCancel(true) // Ilmoitus katoaa klikattaessa
+            .setAutoCancel(true)
             .build()
 
         // Näytetään ilmoitus. ID:nä käytetään hashcodea, jotta useampi eri kirjeen

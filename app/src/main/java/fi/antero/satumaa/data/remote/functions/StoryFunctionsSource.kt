@@ -48,7 +48,6 @@ class StoryFunctionsSource @Inject constructor(
             )
 
             // Kutsutaan funktiota.
-            // Timeout on nostettu 60 sekuntiin, koska LLM-generointi voi kestää.
             val result = functions
                 .getHttpsCallable("generateStory")
                 .withTimeout(60, TimeUnit.SECONDS)

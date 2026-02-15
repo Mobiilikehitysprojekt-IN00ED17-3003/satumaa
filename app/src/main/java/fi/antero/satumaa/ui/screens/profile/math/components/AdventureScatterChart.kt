@@ -28,96 +28,119 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 /**
- * Piirtää "Seikkailuindeksi"-hajakuvaajan (Scatter Plot).
+ * 4. SEIKKAILUINDEKSI - HAJAKUVAAJA (Scatter Plot)
  *
- * X-akseli: Sadun pituus (sanamäärä)
- * Y-akseli: Seikkailupisteet (laskettu avainsanoista MathEnginellä)
+ * Tämä on sovelluksen teknisesti edistynein UI-komponentti.
  *
- * TOTEUTUS:
- * Käyttää matalan tason Canvas-piirtoa (Native Canvas), koska halusimme
- * täydellisen kontrollin akseleiden, emojien ja kosketuksen (tap gesture) suhteen.
+ * MIKSI NATIVE CANVAS?
+ * Valmiit kirjastot eivät tukeneet emojien piirtämistä datapisteinä tai
+ * haluamaamme custom-kosketuslogiikkaa. Siksi piirrämme graafin "käsin"
+ * pikseli pikseliltä.
  */
 @Composable
 fun AdventureScatterChart(uiState: StatsUiState) {
+    // 1. Datan validointi: Jos ei dataa, ei piirretä mitään.
     if (uiState.adventureData.isEmpty()) return
 
     val points = uiState.adventureData
-    val context = LocalContext.current // Tarvitaan Canvasin sisällä tekstiresursseille
+    val context = LocalContext.current
 
-    // Tila valitulle pisteelle (näytetään info-laatikko, kun pistettä painetaan)
+    // TILA (State): Mikä piste on tällä hetkellä valittuna?
+    // Tämä ohjaa sitä, näytetäänkö ruudulla Info-laatikko (Tooltip).
     var selectedPoint by remember { mutableStateOf<AdventurePoint?>(null) }
 
-    // Lasketaan datan ääriarvot skaalausta varten
+    // --- SKAALAUSLASKENTA (Math Setup) ---
+    // Ennen piirtoa meidän täytyy tietää "pelikentän rajat".
+
+    // X-akselin rajat (Sanamäärä): Etsitään lyhin ja pisin satu.
     val minX = points.minOf { it.wordCount }
     val maxX = points.maxOf { it.wordCount }
-    val minY = 0f // Alku nollasta, jotta skaala on visuaalisesti rehellinen
+
+    // Y-akselin rajat (Pisteet): Alkaa nollasta, loppuu korkeimpaan pistemäärään.
+    val minY = 0f
     val dataMaxY = points.maxOf { it.adventureScore }
 
-    // Turvamarginaalit skaalaukseen (ettei piste mene aivan reunaan)
+    // Lasketaan "Turvallinen maksimi".
+    // Lisäämme hieman tyhjää tilaa ylös ja oikealle, jotta ylin piste ei leikkaudu puoliksi.
+    // X: Lisätään vähintään 1, jotta ei tule nollalla jakamista jos kaikki sadut ovat saman pituisia.
     val safeMaxX = max(maxX, minX + 1f)
-    // Pyöristetään Y-maksimi ylöspäin kymmeniin (esim. 42 -> 50)
+    // Y: Pyöristetään ylöspäin lähimpään kymmeneen (esim. 42 -> 50), näyttää siistimmältä.
     val safeMaxY = max(30f, ((dataMaxY.toInt() / 10) * 10 + 10).toFloat())
 
+    // BoxWithConstraints antaa meille komponentin tarkan koon (maxWidth/Height)
+    // jota tarvitsemme pikselilaskentaan.
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
             .height(300.dp)
     ) {
         val density = LocalDensity.current
+        // Muutetaan Dp (laiteriippumaton) -> Px (pikselit)
         val widthPx = with(density) { maxWidth.toPx() }
         val heightPx = with(density) { maxHeight.toPx() }
 
-        // Määritellään marginaalit akseleille ja otsikoille
-        val leftPad = 70f
+        // Määritellään marginaalit (Padding), jotta akselien tekstit mahtuvat reunoille.
+        val leftPad = 70f   // Tilaa Y-akselin numeroille
         val rightPad = 30f
         val topPad = 40f
-        val bottomPad = 60f
+        val bottomPad = 60f // Tilaa X-akselin tekstille
 
-        // Varsinainen piirtoalue (Plot Area)
+        // Lasketaan varsinaisen kuvaaja-alueen (Plot Area) koordinaatit
         val plotLeft = leftPad
         val plotRight = widthPx - rightPad
         val plotTop = topPad
         val plotBottom = heightPx - bottomPad
 
-        // --- APUFUNKTIOT KOORDINAATTIMUUNNOKSIIN ---
-        // Muuntaa datan arvon (esim. 150 sanaa) ruudun pikseliksi (esim. x=200px)
+        // --- MATEMATIIKKA: KOORDINAATTIMUUNNOS (Mapping Functions) ---
+        // Nämä funktiot ovat graafin sydän. Ne muuttavat datan (esim. 150 sanaa)
+        // ruudun sijainniksi (esim. 320 pikseliä vasemmasta reunasta).
+
+        // X: Lineaarinen interpolaatio vasemmalta oikealle
         fun mapX(x: Float): Float {
-            val t = (x - minX) / (safeMaxX - minX) // Normalisoitu arvo 0..1
+            // t = suhdeluku 0..1 (missä kohtaa akselia ollaan)
+            val t = (x - minX) / (safeMaxX - minX)
             return plotLeft + t * (plotRight - plotLeft)
         }
 
-        // Muuntaa Y-arvon pikseliksi. Huom: Y-akseli kasvaa alaspäin näytöllä,
-        // joten 'plotBottom' on 0-arvo ja 'plotTop' on maksimi.
+        // Y: Lineaarinen interpolaatio alhaalta ylös
         fun mapY(y: Float): Float {
             val t = (y - minY) / (safeMaxY - minY)
+            // HUOM: Tietokoneen grafiikassa Y=0 on ylhäällä.
+            // Siksi lasku on "Alareuna MIINUS korkeus".
             return plotBottom - t * (plotBottom - plotTop)
         }
 
-        // Haetaan käännökset kerran ennen piirtosilmukkaa
         val xLabel = stringResource(R.string.chart_word_count)
         val yLabel = stringResource(R.string.chart_adventure_index)
 
+        // --- PIIRTO (Rendering) ---
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                // Tunnistetaan kosketus
+                // --- INTERAKTIO (Touch Handling) ---
+                // Tunnistetaan käyttäjän painallus
                 .pointerInput(Unit) {
                     detectTapGestures { tapOffset ->
-                        val touchRadius = 50f // Kuinka läheltä pitää painaa
+                        val touchRadius = 50f // Osumatarkkuus (sormi on paksu)
 
-                        // Etsitään lähin piste
+                        // Algoritmi: Etsitään lähin piste (Nearest Neighbor Search)
                         val closest = points.minByOrNull { p ->
+                            // Lasketaan missä piste sijaitsee pikseleinä
                             val px = mapX(p.wordCount)
                             val py = mapY(p.adventureScore)
-                            // Pythagoraan lause etäisyyden laskemiseen
+
+                            // Lasketaan etäisyys sormen ja pisteen välillä (Pythagoraan lause)
+                            // c = neliöjuuri(a^2 + b^2)
                             sqrt((px - tapOffset.x).pow(2) + (py - tapOffset.y).pow(2))
                         }
 
-                        // Valitaan piste, jos se on tarpeeksi lähellä
+                        // Tarkistetaan, osuiko painallus tarpeeksi lähelle
                         if (closest != null) {
                             val px = mapX(closest.wordCount)
                             val py = mapY(closest.adventureScore)
                             val dist = sqrt((px - tapOffset.x).pow(2) + (py - tapOffset.y).pow(2))
+
+                            // Päivitetään tila: Jos osui, valitaan piste. Muuten tyhjennetään valinta.
                             selectedPoint = if (dist < touchRadius) closest else null
                         } else {
                             selectedPoint = null
@@ -125,16 +148,19 @@ fun AdventureScatterChart(uiState: StatsUiState) {
                     }
                 }
         ) {
-            // 1. Piirretään akselit
+            //
+
+
+
+            // VAIHE 1: Piirretään akselit (L-muoto)
             drawLine(Color(0xFF444444), Offset(plotLeft, plotBottom), Offset(plotRight, plotBottom), 3f) // X
             drawLine(Color(0xFF444444), Offset(plotLeft, plotBottom), Offset(plotLeft, plotTop), 3f)     // Y
 
-            // 2. Piirretään apuviivat (Grid)
+            // VAIHE 2: Piirretään apuviivat (Grid) selkeyden vuoksi
             val tickColor = Color(0x22000000)
-            val gridStep = 5f // Viivat 5 pisteen välein
+            val gridStep = 5f // Viiva joka 5. pisteen välein
             val numSteps = (safeMaxY / gridStep).toInt()
 
-            // Vaakaviivat
             for (i in 1..numSteps) {
                 val yValue = i * gridStep
                 val y = mapY(yValue)
@@ -143,25 +169,23 @@ fun AdventureScatterChart(uiState: StatsUiState) {
                 }
             }
 
-            // Pystyviivat (4 kpl tasavälein)
-            for (i in 1..4) {
-                val x = plotLeft + i * (plotRight - plotLeft) / 4f
-                drawLine(tickColor, Offset(x, plotBottom), Offset(x, plotTop), 1f)
-            }
-
-            // 3. Piirretään datapisteet
+            //
+            // VAIHE 3: Piirretään datapisteet
             points.forEach { ap ->
                 val x = mapX(ap.wordCount)
                 val y = mapY(ap.adventureScore)
 
-                // Korostetaan valittua pistettä
+                // Jos piste on valittu, piirretään sen alle korostusympyrä
                 if (ap == selectedPoint) {
                     drawCircle(Color(0x80E91E63), 35f, Offset(x, y))
                 } else {
+                    // Muuten himmeä tausta
                     drawCircle(Color(0x22E91E63), 18f, Offset(x, y))
                 }
 
-                // Piirretään emoji (StyleIcon) pisteen päälle
+                // VAIHE 4: Piirretään Emoji (Native Canvas)
+                // Käytämme nativeCanvasia, koska Composen drawText on vielä rajoittunut.
+                // Haluamme käyttää Androidin Paint-luokkaa emojien renderöintiin.
                 drawIntoCanvas { canvas ->
                     val p = android.graphics.Paint().apply {
                         isAntiAlias = true
@@ -169,11 +193,12 @@ fun AdventureScatterChart(uiState: StatsUiState) {
                         textSize = 34f
                         textAlign = android.graphics.Paint.Align.CENTER
                     }
+                    // ap.styleIcon on esimerkiksi "⚡" tai "🦉"
                     canvas.nativeCanvas.drawText(ap.styleIcon, x, y + 12f, p)
                 }
             }
 
-            // 4. Piirretään akseliotsikot
+            // VAIHE 5: Piirretään akseliotsikot
             drawIntoCanvas { canvas ->
                 val p = android.graphics.Paint().apply {
                     isAntiAlias = true
@@ -181,23 +206,25 @@ fun AdventureScatterChart(uiState: StatsUiState) {
                     textSize = 30f
                     textAlign = android.graphics.Paint.Align.CENTER
                 }
-                // X-akselin otsikko
+                // X-akseli: "Sanamäärä"
                 canvas.nativeCanvas.drawText(xLabel, (plotLeft + plotRight) / 2f, size.height - 15f, p)
 
-                // Y-akselin otsikko (kierretään 90 astetta)
+                // Y-akseli: "Seikkailuindeksi"
+                // Tämä vaatii koordinaatiston kääntämistä (Rotate), jotta teksti on pystyssä.
                 canvas.nativeCanvas.save()
                 canvas.nativeCanvas.rotate(-90f, 25f, (plotTop + plotBottom) / 2f)
                 canvas.nativeCanvas.drawText(yLabel, 25f, (plotTop + plotBottom) / 2f, p)
-                canvas.nativeCanvas.restore()
+                canvas.nativeCanvas.restore() // Palautetaan koordinaatisto normaaliksi
             }
         }
 
-        // --- INFO-LAATIKKO (TOOLTIP) ---
-        // Näytetään kelluva laatikko, jos piste on valittu
+        // --- INFO-LAATIKKO (TOOLTIP / OVERLAY) ---
+        // Tämä on normaali Compose-komponentti, joka piirretään Canvasin PÄÄLLE,
+        // jos jokin piste on valittuna (selectedPoint != null).
         selectedPoint?.let { point ->
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
+                    .align(Alignment.TopEnd) // Asemointi oikeaan yläkulmaan
                     .padding(top = 10.dp, end = 10.dp)
                     .background(Color.White.copy(alpha = 0.95f), RoundedCornerShape(8.dp))
                     .padding(8.dp)
@@ -210,7 +237,6 @@ fun AdventureScatterChart(uiState: StatsUiState) {
                         color = Color.Black
                     )
                     Text(
-                        // Esim. "Pisteet: 45, Sanat: 120"
                         text = stringResource(
                             R.string.chart_points_label,
                             point.adventureScore.toInt(),
