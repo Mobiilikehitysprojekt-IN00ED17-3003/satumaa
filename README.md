@@ -25,7 +25,7 @@ Satumaa on rakennettu skaalautuvaksi ekosysteemiksi. Nyt toteutettu Joulupukki-m
 
 * **Vaihtuvat teemamaailmat:** Alusta tukee uusien sisältökokonaisuuksien lisäämistä – oli kyseessä sitten pääsiäisseikkailu tai avaruusmatka, uusi sisältö voidaan tuoda sovellukseen joustavasti.
 * **Pelillisyys ja oppiminen:** Sovelluksen rakenne mahdollistaa erilaisten vuorovaikutteisten elementtien, kuten tehtävien tai minipelien, integroimisen osaksi tarinankerrontaa.
-* **Kehittyvä arkkitehtuuri: Nykyinen Clean Architecture -pohja varmistaa koodin selkeän vastuunjaon, luoden perustan modulaariselle rakenteelle. Sovellus on suunniteltu siten, että sisällön kasvaessa voidaan siirtyä kerrosarkkitehtuurista (Layer-based) kohti ominaisuuspohjaista monimoduuliarkkitehtuuria (Feature-based Multi-module). Tässä visiossa yhteinen logiikka ja data eriytetään jaettuihin Core-ytimiin, joiden päälle uudet teemat ja ominaisuudet rakentuvat itsenäisinä palasina. Tämä rakenne estää koodin monistumisen ja pitää kehityksen ketteränä myös satojen uusien ominaisuuksien mittakaavassa.
+* **Kehittyvä arkkitehtuuri:** Nykyinen Clean Architecture -pohja varmistaa koodin selkeän vastuunjaon, luoden perustan modulaariselle rakenteelle. Sovellus on suunniteltu siten, että sisällön kasvaessa voidaan siirtyä kerrosarkkitehtuurista (Layer-based) kohti ominaisuuspohjaista monimoduuliarkkitehtuuria (Feature-based Multi-module). Tässä visiossa yhteinen logiikka ja data eriytetään jaettuihin Core-ytimiin, joiden päälle uudet teemat ja ominaisuudet rakentuvat itsenäisinä palasina. Tämä rakenne estää koodin monistumisen ja pitää kehityksen ketteränä myös satojen uusien ominaisuuksien mittakaavassa.
 
 ---
 
