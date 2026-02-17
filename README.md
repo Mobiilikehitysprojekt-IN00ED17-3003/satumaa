@@ -449,8 +449,10 @@ Käyttöliittymä on täysin tilapohjainen (State-Driven). UI reagoi automaattis
 * **Onnistuminen (Success):** Kun operaatio valmistuu, sisältö animoidaan näkyviin (`AnimatedVisibility`), mikä tekee kokemuksesta sulavan.
 * **Validoinnit:** Syötekentät validoidaan reaaliajassa, ja toimintopainikkeet aktivoituvat vasta, kun tarvittavat tiedot on syötetty.
 
-<img width="597" height="1098" alt="image" src="https://github.com/user-attachments/assets/dfafe5af-e2ed-4482-87fa-d4f995016fa1" />
-<img width="548" height="1072" alt="image" src="https://github.com/user-attachments/assets/f6ebe805-dca3-4e88-b3d6-221dfb3c892a" />
+
+| | |
+|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/dfafe5af-e2ed-4482-87fa-d4f995016fa1" width="300" alt="Stats Screen 1"> | <img src="https://github.com/user-attachments/assets/f6ebe805-dca3-4e88-b3d6-221dfb3c892a" width="300" alt="Stats Screen 2"> |
 
 
 
@@ -523,7 +525,15 @@ Projektin rakenne on organisoitu loogisesti teknisen vastuun mukaan (**Package b
 * **Nimeäminen:** Luokat ja funktiot on nimetty englanniksi ja kuvaavasti (esim. `SyncStoriesWorker`, `MagicWordInput`), noudattaen Kotlinin nimeämiskäytäntöjä.
 * **Komponentointi:** Käyttöliittymä on pilkottu pieniin, uudelleenkäytettäviin Compose-komponentteihin, mikä vähentää koodin toistoa.
 * **Taustatyöt:** Raskaat synkronointioperaatiot on eriytetty **WorkManager**-työntekijöihin (`Worker`), jotta ne eivät kuormita käyttöliittymää.
-* <img width="431" height="435" alt="image" src="https://github.com/user-attachments/assets/aa7d3607-c49e-4764-9b94-8a156ddba229" />
+### 🛠️ Arkkitehtuuri ja Rakenne
+
+| | |
+|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/aa7d3607-c49e-4764-9b94-8a156ddba229" width="300" alt="Architecture Overview"> | <img src="https://github.com/user-attachments/assets/25189dfc-8295-463e-a959-ecd10bfc2529" width="300" alt="Project Structure"> |
+| <img src="https://github.com/user-attachments/assets/0aafc442-8822-419b-9306-6ed5d1dc0503" width="300" alt="Data Flow Diagram"> | <img src="https://github.com/user-attachments/assets/97da0497-5561-407f-9566-eed39ee47186" width="300" alt="Navigation Graph"> |
+
+
+
 
 ___
 ## 🚀 7. Advanced Mobile -osuus: Secure AI with Firebase Cloud Functions
