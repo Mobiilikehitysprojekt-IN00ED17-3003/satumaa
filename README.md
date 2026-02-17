@@ -1,11 +1,11 @@
 # ✨ Satumaa – Missä teknologia kohtaa tarinat
 
-**Satumaa** on moderni, **MVVM-arkkitehtuurilla** ja **Kotlinilla** toteutettu mobiilisovellus, joka on rakennettu **Jetpack Composen** deklaratiiviseen maailmaan. Se on suunniteltu modulaariseksi elämysalustaksi, joka tässä versiossa yhdistää generatiivisen tekoälyn, reaaliaikaisen paikkatietoviestinnän ja lisätyn todellisuuden elementit saumattomaksi kokonaisuudeksi.
+**Satumaa** on moderni, **kevennettyä Clean Architecture** -mallia ja **MVVM-arkkitehtuuria** hyödyntävä Kotlin-mobiilisovellus, joka on rakennettu **Jetpack Composen** deklaratiiviseen maailmaan. Se on suunniteltu modulaariseksi elämysalustaksi, joka tässä versiossa yhdistää generatiivisen tekoälyn, reaaliaikaisen paikkatietoviestinnän ja lisätyn todellisuuden elementit saumattomaksi kokonaisuudeksi.
 
 ---
 
 ### 🚀 Tekninen ydin ja arkkitehtuuri
-Sovelluksen selkärankana toimii kattava **Firebase-ekosysteemi**, joka toimii turvallisena siltana laitteen ja pilvipalveluiden välillä. Modernia ja kevennettyä Clean Architecture -mallia noudattaen ratkaisu koostuu seuraavista osa-alueista:
+Sovelluksen selkärankana toimii kattava **Firebase-ekosysteemi**, joka toimii turvallisena siltana laitteen ja pilvipalveluiden välillä. Ratkaisu on rakennettu tukemaan tietoturvaa, suorituskykyä ja offline-käyttöä seuraavien modernien teknologioiden avulla:
 
 * **Cloud Functions & Gemini AI:** Sovelluslogiikka on eriytetty pilvifunktioihin, jotka toimivat turvallisena yhdyskäytävänä generatiiviselle tekoälylle, piilottaen API-avaimet ja monimutkaisen logiikan päätelaitteelta.
 * **Firestore & Autentikointi:** Reaaliaikainen NoSQL-tietokanta ja Google-kirjautuminen takaavat, että käyttäjän luomat sadut ja kirjeet pysyvät tallessa ja synkronoituna laitteiden välillä.
