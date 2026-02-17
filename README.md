@@ -5,7 +5,7 @@
 ---
 
 ### 🚀 Tekninen ydin ja arkkitehtuuri
-Sovelluksen selkärankana toimii kattava **Firebase-ekosysteemi**, joka toimii turvallisena siltana laitteen ja pilvipalveluiden välillä. Clean Architecture -periaatteita noudattaen ratkaisu koostuu seuraavista osa-alueista:
+Sovelluksen selkärankana toimii kattava **Firebase-ekosysteemi**, joka toimii turvallisena siltana laitteen ja pilvipalveluiden välillä. Modernia ja kevennettyä Clean Architecture -mallia noudattaen ratkaisu koostuu seuraavista osa-alueista:
 
 * **Cloud Functions & Gemini AI:** Sovelluslogiikka on eriytetty pilvifunktioihin, jotka toimivat turvallisena yhdyskäytävänä generatiiviselle tekoälylle, piilottaen API-avaimet ja monimutkaisen logiikan päätelaitteelta.
 * **Firestore & Autentikointi:** Reaaliaikainen NoSQL-tietokanta ja Google-kirjautuminen takaavat, että käyttäjän luomat sadut ja kirjeet pysyvät tallessa ja synkronoituna laitteiden välillä.
@@ -25,7 +25,7 @@ Satumaa on rakennettu skaalautuvaksi ekosysteemiksi. Nyt toteutettu Joulupukki-m
 
 * **Vaihtuvat teemamaailmat:** Alusta tukee uusien sisältökokonaisuuksien lisäämistä – oli kyseessä sitten pääsiäisseikkailu tai avaruusmatka, uusi sisältö voidaan tuoda sovellukseen joustavasti.
 * **Pelillisyys ja oppiminen:** Sovelluksen rakenne mahdollistaa erilaisten vuorovaikutteisten elementtien, kuten tehtävien tai minipelien, integroimisen osaksi tarinankerrontaa.
-* **Kehittyvä arkkitehtuuri:** Nykyinen Clean Architecture -pohja varmistaa koodin selkeän vastuunjaon, luoden perustan modulaariselle rakenteelle. Sovellus on suunniteltu siten, että sisällön kasvaessa voidaan siirtyä kerrosarkkitehtuurista (Layer-based) kohti ominaisuuspohjaista monimoduuliarkkitehtuuria (Feature-based Multi-module). Tässä visiossa yhteinen logiikka ja data eriytetään jaettuihin Core-ytimiin, joiden päälle uudet teemat ja ominaisuudet rakentuvat itsenäisinä palasina. Tämä rakenne estää koodin monistumisen ja pitää kehityksen ketteränä myös satojen uusien ominaisuuksien mittakaavassa.
+* **Kehittyvä arkkitehtuuri:** "Nykyinen selkeään vastuunjakoon perustuva arkkitehtuuri varmistaa koodin ylläpidettävyyden, luoden perustan modulaariselle rakenteelle. Sovellus on suunniteltu siten, että sisällön kasvaessa voidaan siirtyä kerrosarkkitehtuurista (Layer-based) kohti ominaisuuspohjaista monimoduuliarkkitehtuuria (Feature-based Multi-module). Tässä visiossa yhteinen logiikka ja data eriytetään jaettuihin Core-ytimiin, joiden päälle uudet teemat ja ominaisuudet rakentuvat itsenäisinä palasina. Tämä rakenne estää koodin monistumisen ja pitää kehityksen ketteränä myös satojen uusien ominaisuuksien mittakaavassa.
 
 ---
 
@@ -42,6 +42,29 @@ Ensimmäisessä toteutetussa teemassa halusimme esitellä teknistä osaamistamme
 Satumaa ei ainoastaan luo tarinoita, vaan se myös analysoi niitä. Sisäänrakennettu **laskentayksikkö (StatsMathEngine)** seuraa sanavaraston kehitystä lineaarisen regression avulla ja pisteyttää tarinoiden jännitystason uniikilla seikkailuindeksillä, tarjoten visualisoitua tietoa harrastuksen edistymisestä.
 
 **Satumaa on enemmän kuin sovellus – se on silta perinteisen tarinankerronnan ja tulevaisuuden teknologian välillä.**
+
+## 📋 Sisällysluettelo
+
+1.  [Projektin perustiedot](#-1-projektin-perustiedot)
+2.  [Pakolliset palautukset / Dokumentit](#-2-pakolliset-palautukset--documents)
+3.  [Scrum & GitHub Projects](#-3-scrum--github-projects--näyttö)
+4.  [Projekti-ominaisuudet](#%EF%B8%8F-4-projekti-ominaisuudet)
+    * [4.1 HTTP / API -toteutus (Cloud Functions)](#41-http--api--toteutus-firebase-cloud-functions)
+    * [4.2 Paikallinen tallennus (Room)](#42-paikallinen-tallennus-room-database)
+    * [4.3 Offline First](#43-offline-välimuistikäytös-offline-first)
+    * [4.4 Autentikointi & Tietoturva](#44-autentikointi-firebase-google-sign-in-ja-tietoturva-app-check)
+    * [4.5 Notifikaatiot](#45-notifikaatiot-paikalliset-ilmoitukset)
+    * [4.6 Kartta ja paikkatieto](#46-kartta-ja-paikkatieto-openstreetmap--sijaintipalvelut)
+    * [4.7 & 4.8 Sensorit, Kamera ja AR](#47--48-sensorit-kamera-ja-ar-kokemus)
+    * [4.9 Taustatyöt (WorkManager)](#49-taustatyö-ja-elinkaarikestävyys-workmanager)
+    * [4.10 Generatiivinen tekoäly (Gemini AI)](#410-vapaa-vaativa-ominaisuus-generatiivinen-tekoäly-gemini-ai)
+5.  [UI/UX & Navigaatio](#-5-projekti--uiux--navigaatio)
+6.  [Arkkitehtuuri & Koodin laatu](#-6-projekti--arkkitehtuuri--koodin-laatu)
+    * [6.1 Kerrosjako (Pragmatic Clean Arch)](#61-selkeä-kerrosjako-mvvm--clean-architecture)
+    * [6.2 Datavirta (UDF)](#62-state-hallinta-ja-datavirta-unidirectional-data-flow)
+    * [6.3 Rakenne ja Kaaviot](#63-luettava-koodi-ja-rakenne)
+7.  [Advanced Mobile: Secure AI](#-7-advanced-mobile--osuus-secure-ai-with-firebase-cloud-functions)
+8.  [Bonukset ja Viimeistely](#-8-bonukset-ja-viimeistely)
 
 
 <img width="405" height="899" alt="Näyttökuva 2026-02-10 182314" src="https://github.com/user-attachments/assets/3d1f2b17-9783-4cca-b210-2059690708f0" /> <img width="405" height="899" alt="Näyttökuva 2026-02-10 214315" src="https://github.com/user-attachments/assets/451c3c07-a900-4d6b-8204-2cb30771833c" />
@@ -469,7 +492,7 @@ Sovellus on optimoitu ensisijaisesti **pystyasentoon (Portrait-first design)**, 
 ___
 ## 📚 6. Projekti – arkkitehtuuri & koodin laatu
 
-Sovellus noudattaa **Clean Architecture** -periaatteita ja **MVVM**-suunnittelumallia (Model-View-ViewModel). Tämä rakenne takaa koodin testattavuuden, selkeän vastuunjaon ja helpon ylläpidettävyyden.
+Sovellus on rakennettu noudattaen **kevennettyä Clean Architecture -mallia (Pragmatic Clean Architecture)** ja **MVVM**-suunnittelumallia (Model-View-ViewModel). Olemme valinneet pragmaattisen lähestymistavan, joka yhdistää arkkitehtuurin parhaat puolet (testattavuus ja vastuunjako) ilman pienen sovelluksen turhaa monimutkaisuutta.
 
 ### 6.1 Selkeä kerrosjako (MVVM & Clean Architecture)
 Sovellus on jaettu kolmeen itsenäiseen kerrokseen, joissa riippuvuudet osoittavat aina sisäänpäin (Data -> Domain <- Presentation).
@@ -491,6 +514,9 @@ Sovellus on jaettu kolmeen itsenäiseen kerrokseen, joissa riippuvuudet osoittav
 > **💡 Esimerkki vastuunjaosta:**
 > * **Domain (`StoryRepository`):** "Poista satu ID:llä X."
 > * **Data (`StoryRepositoryImpl`):** "Poistan sadun heti Roomista, jotta lista päivittyy käyttäjälle heti. Sen jälkeen käynnistän taustatyön, joka yrittää poistaa sadun pilvestä, kun verkko on saatavilla."
+
+> **Huomio arkkitehtuurivalinnasta:**
+> Puhdasoppisessa Clean Architecturessa käytettäisiin erillisiä *Use Case* -luokkia. Tässä projektissa olemme tietoisesti yhdistäneet Domain-logiikan Repository-rajapintoihin koodin selkeyden vuoksi, mikä on Googlen suosittelema tapa tämän kokoluokan sovelluksissa.
 
 **Hilt**-riippuvuuksien injektio sitoo nämä kerrokset yhteen ja mahdollistaa mm. WorkManagerin käytön repositoryssa.
 
@@ -629,7 +655,7 @@ Kaikki tekstit on eriytetty resurssitiedostoon, ja niiden sävy on suunniteltu l
 * *Tekninen:* "Odota vastausta..." -> *Sovellus:* "Pukki miettii vastausta... 🎅"
 
 ### 8.2 Muu opettajan hyväksymä bonus
-Sovelluksen tekninen laajuus ylittää peruskurssin vaatimukset kolmella merkittävällä alueella:
+Sovelluksen tekninen laajuus ylittää peruskurssin vaatimukset kahdella merkittävällä alueella:
 
 1.  **Generatiivinen AI :** Sovellus luo uniikkia sisältöä (satuja ja kirjeitä) reaaliajassa käyttäjän syötteiden perusteella, eikä vain hae valmista dataa tietokannasta.
 2.  **"Light AR" -ominaisuus:** Olemme integroineet laitteen kameran osaksi tarinankerrontaa. Kirjeen saapuessa käyttäjä voi "etsiä" kirjettä oikeasta maailmasta kameran avulla. Tämä yhdistää digitaalisen sisällön ja reaalimaailman (Augmented Reality -tyyppinen kokemus), mikä tekee sovelluksesta lapselle jännittävämmän.
