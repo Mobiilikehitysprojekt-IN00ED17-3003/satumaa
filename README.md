@@ -405,44 +405,220 @@ Sovelluksen erikoisominaisuus on personoitujen satujen luominen käyttämällä 
 
 
 ___
-🖼 5. Projekti – UI/UX & navigaatio
--
-5.1 Näkymät + navigaatio (väh. 3 näkymää, järkevä polku) 
+## 🖼 5. Projekti – UI/UX & navigaatio
 
-5.2 UI johdonmukainen (teema/typografia/komponentit) 
+Sovelluksen käyttöliittymä on toteutettu **100% Jetpack Composella**, mikä mahdollistaa modernin, reaktiivisen ja yhtenäisen käyttökokemuksen. Suunnittelun keskiössä on ollut lapsiystävällisyys, selkeys ja maaginen tunnelma.
 
-5.3 Käytettävyys: lataus/virhe/tyhjä-tilat, validoinnit 
+### 5.1 Näkymät + navigaatio
+Navigaatio pohjautuu **Jetpack Navigation Compose** -kirjastoon, joka hallinnoi siirtymiä saumattomasti ns. *Single Activity* -arkkitehtuurin sisällä. Sovellus koostuu kolmesta pääkokonaisuudesta:
 
-5.4 Viimeistely: responsiivisuus/landscape/tablet tms.
+1.  **Kirjasto (Koti):** Selkeä listanäkymä tallennetuista saduista. Jokainen satu on esitetty "korttina", joka näyttää otsikon, teeman ja luontipäivämäärän.
+2.  **Luo uusi satu:** Wizard-tyyppinen näkymä (`StoryScreen`), jossa käyttäjä valitsee parametrit (nimi, teema, avainsanat) ja käynnistää generoinnin.
+3.  **Joulupukki & Profiili:** Erikoisnäkymät, jotka sisältävät interaktiivisia elementtejä kuten kartan (OSMdroid), AR-kameran ja tilastograafit.
+
+**Navigaatiorakenne:**
+* Päänäkymien välillä liikutaan **Bottom Navigation Bar** -alapalkin avulla (Koti / Luo / Profiili).
+* Syvemmät tasot (esim. yksittäisen sadun luku tai karttanäkymä) avautuvat koko ruudun näkyminä, joista pääsee takaisin yläpalkin "Back"-painikkeella tai Androidin eleohjauksella.
+
+<img width="511" height="1043" alt="image" src="https://github.com/user-attachments/assets/774017c1-e219-4ad6-a55c-4a7ded004b6e" />
+<img width="542" height="1043" alt="image" src="https://github.com/user-attachments/assets/5ac07d34-d825-4dbe-b6bc-cda9a9bb0881" />
+<img width="587" height="1060" alt="image" src="https://github.com/user-attachments/assets/050824a1-745d-4ddb-8684-a3a1a7b18812" />
+<img width="588" height="1032" alt="image" src="https://github.com/user-attachments/assets/9b8dd79f-f281-4141-9fcf-8a83dceb2a36" />
+<img width="526" height="1056" alt="image" src="https://github.com/user-attachments/assets/c9b981ce-702d-4ef4-b8e3-5f39ebd24f37" />
+<img width="533" height="1060" alt="image" src="https://github.com/user-attachments/assets/359ca496-b6f0-495b-8a8d-b5bc445e3616" />
+<img width="547" height="1076" alt="image" src="https://github.com/user-attachments/assets/b9d92fdb-dbfe-4c50-ae31-826502a3d133" />
+<img width="542" height="1051" alt="image" src="https://github.com/user-attachments/assets/c4f8e0bb-8603-40a4-b146-0c9c317e9de6" />
+<img width="544" height="1046" alt="image" src="https://github.com/user-attachments/assets/e9fc68c5-8e28-4fcd-a8e3-1cdd64b6fade" />
+
+
+
+
+### 5.2 UI johdonmukainen (Material3 & Theming)
+Sovellus noudattaa **Material Design 3** -ohjeistusta, mutta se on kustomoitu tukemaan *Satumaa*-brändiä (`SatumaaTheme`).
+
+* **Teema ja Värit:** Käytämme keskitettyä teemaa, joka määrittelee sovelluksen ilmeen (`ui/theme/Theme.kt`). Väripaletti on maanläheinen ja rauhoittava (mm. *Forest Green, Terracotta, Sky Blue, StorybookPaper*), mikä tukee sadunkerronnan tunnelmaa ja luettavuutta.
+* **Komponentit:** Olemme rakentaneet uudelleenkäytettäviä UI-komponentteja (kuten `StoryCard`, `MagicWordInput`, `AppButton`), jotta ulkoasu pysyy yhtenäisenä läpi sovelluksen ja koodin ylläpito on helpompaa.
+* **Typografia:** Tekstit on hierarkisoitu selkeästi (Otsikko, Leipäteksti, Caption), mikä parantaa luettavuutta pienilläkin näytöillä.
+
+### 5.3 Käytettävyys: State-Driven UI
+Käyttöliittymä on täysin tilapohjainen (State-Driven). UI reagoi automaattisesti ViewModelin tarjoamaan `UiState`-tilaan (esim. `StoryUiState`):
+
+* **Lataustilat (Loading):** Kun tekoäly generoi satua tai dataa haetaan pilvestä, käyttäjälle näytetään selkeä `CircularProgressIndicator` tai latausanimaatio. UI ei koskaan "jäädy".
+* **Virhetilat (Error):** Verkkovirheet tai API-ongelmat näytetään käyttäjälle ymmärrettävinä virheilmoituksina (`ErrorView`), joissa on "Yritä uudelleen" -toiminto.
+* **Onnistuminen (Success):** Kun operaatio valmistuu, sisältö animoidaan näkyviin (`AnimatedVisibility`), mikä tekee kokemuksesta sulavan.
+* **Validoinnit:** Syötekentät validoidaan reaaliajassa, ja toimintopainikkeet aktivoituvat vasta, kun tarvittavat tiedot on syötetty.
+
+<img width="597" height="1098" alt="image" src="https://github.com/user-attachments/assets/dfafe5af-e2ed-4482-87fa-d4f995016fa1" />
+<img width="548" height="1072" alt="image" src="https://github.com/user-attachments/assets/f6ebe805-dca3-4e88-b3d6-221dfb3c892a" />
+
+
+
+### 5.4 Viimeistely: Portrait-first -suunnittelu
+Sovellus on optimoitu ensisijaisesti **pystyasentoon (Portrait-first design)**, mikä tukee parhaiten tarinoiden lukemista ja mobiililaitteen luontevaa käyttöä yhdellä kädellä.
+
+* **Tekninen joustavuus:** Vaikka käyttöliittymä on lukittu pystysuuntaiseen asetteluun, kaikki näkymät on kääritty skrollattaviin säiliöihin (`LazyColumn`, `verticalScroll`). Tämä varmistaa, että sovellus pysyy toimintakykyisenä ja kaikki elementit ovat saavutettavissa myös matalilla näytöillä tai jos laite käännetään vaakatilaan.
+* **Skaalautuvuus:** Graafit ja kartat mukautuvat näytön leveyteen, mutta tekstisisältö on optimoitu pystylukemiseen.
+* <img width="843" height="449" alt="image" src="https://github.com/user-attachments/assets/cf9ff1c2-e840-460d-9045-e05dbf9df4cf" />
+
+
+
 
 ___
-📚 6. Projekti – arkkitehtuuri & koodin laatu
--
-6.1 Selkeä kerrosjako (MVVM tai vastaava) 
+## 📚 6. Projekti – arkkitehtuuri & koodin laatu
 
-6.2 State-hallinta ja datavirta järkevästi 
+Sovellus noudattaa **Clean Architecture** -periaatteita ja **MVVM**-suunnittelumallia (Model-View-ViewModel). Tämä rakenne takaa koodin testattavuuden, selkeän vastuunjaon ja helpon ylläpidettävyyden.
 
-6.3 Luettava koodi (nimeäminen, komponentointi, ei turhaa toistoa)
+### 6.1 Selkeä kerrosjako (MVVM & Clean Architecture)
+Sovellus on jaettu kolmeen itsenäiseen kerrokseen, joissa riippuvuudet osoittavat aina sisäänpäin (Data -> Domain <- Presentation).
+
+1.  **Presentation Layer (UI):**
+    * Vastaa näkymien piirtämisestä (**Jetpack Compose**) ja tilan hallinnasta (**ViewModel**).
+    * UI reagoi reaktiiviseen tilaan eikä sisällä bisneslogiikkaa.
+
+2.  **Domain Layer (Logiikka):**
+    * Sisältää sovelluksen "sydämen": tietomallit (`Story`) ja rajapinnat (`interface StoryRepository`).
+    * **Mitä tehdään:** Rajapinta määrittelee sovelluksen kyvykkyydet, kuten `generateStoryPreview` (luo esikatselu) ja `deleteStory` (poista satu), ottamatta kantaa tekniseen toteutukseen.
+
+3.  **Data Layer (Tiedonhallinta):**
+    * **Miten tehdään:** Toteuttaa Domain-kerroksen rajapinnat (`class StoryRepositoryImpl`) ja koordinoi datavirtaa:
+        * **Lukeminen:** Aina paikallisesta **Room-tietokannasta** (`StoryDao`), mikä takaa nopean UI:n ja offline-toimivuuden.
+        * **Kirjoitus/Generointi:** Käyttää **Firebase Cloud Functions** -palvelua (`StoryFunctionsSource`) tekoälyn ajamiseen.
+        * **Poisto:** Hyödyntää **Optimistic UI** -mallia: satu poistetaan heti paikallisesti, ja **WorkManager** hoitaa poiston pilvestä taustalla (`DeleteStoryWorker`).
+
+> **💡 Esimerkki vastuunjaosta:**
+> * **Domain (`StoryRepository`):** "Poista satu ID:llä X."
+> * **Data (`StoryRepositoryImpl`):** "Poistan sadun heti Roomista, jotta lista päivittyy käyttäjälle heti. Sen jälkeen käynnistän taustatyön, joka yrittää poistaa sadun pilvestä, kun verkko on saatavilla."
+
+**Hilt**-riippuvuuksien injektio sitoo nämä kerrokset yhteen ja mahdollistaa mm. WorkManagerin käytön repositoryssa.
+
+### 6.2 State-hallinta ja datavirta (Unidirectional Data Flow)
+Sovellus hyödyntää **yksisuuntaista datavirtaa (UDF)**. Tila virtaa alaspäin (ViewModel -> UI) ja tapahtumat ylöspäin (UI -> ViewModel).
+
+* **StateFlow & UiState:** ViewModelit paljastavat UI:lle `StateFlow`-virran. Tila on mallinnettu `Sealed Interface` -luokilla (esim. `StoryUiState`), joka pakottaa UI:n käsittelemään kaikki tilanteet (`Loading`, `Success`, `Error`).
+* **Single Source of Truth:** UI ei koskaan muokkaa dataa itse. Muutokset kulkevat ViewModelin kautta, ja lopullinen totuus tallentuu tietokantaan vasta käyttäjän toimesta.
+
+#### Esimerkki datavirrasta: Sadun luonti ja tallennus
+Havainnollistaaksemme arkkitehtuurin toimintaa, seurataan prosessia, jossa käyttäjä luo ja lopulta tallentaa sadun:
+
+1.  **UI-tapahtuma (Generointipyyntö):**
+    * Käyttäjä syöttää taikasanat `StoryScreen`-näkymässä ja painaa "Luo satu".
+    * UI kutsuu `StoryViewModel.generateStory(...)` -funktiota.
+2.  **Tilan muutos (Loading):**
+    * ViewModel päivittää tilaksi `Loading`, jolloin UI näyttää latausindikaattorin.
+3.  **Bisneslogiikka ja Backend:**
+    * ViewModel kutsuu `StoryRepository.generateStoryPreview(...)` -funktiota.
+    * Repository ottaa yhteyden **Firebase Cloud Functions** -rajapintaan (`StoryFunctionsSource`), joka generoi sadun Gemini AI:lla.
+    * **Huom:** Tässä vaiheessa dataa *ei vielä tallenneta* tietokantaan, vaan Repository palauttaa generoidun sadun väliaikaisena `Story`-objektina ViewModelille.
+4.  **UI-tapahtuma (Esikatselu):**
+    * ViewModel päivittää tilaksi `Success(story)`, ja UI esittää valmiin sadun käyttäjälle luettavaksi.
+5.  **Käyttäjän päätös (Tallennus):**
+    * Jos käyttäjä on tyytyväinen, hän painaa "Tallenna"-painiketta.
+    * UI kutsuu `StoryViewModel.saveCurrentStory()`.
+    * Vasta nyt Repository tallentaa sadun pysyvästi paikalliseen **Room-tietokantaan** (`StoryDao`) ja käynnistää taustasynkronoinnin pilveen.
+
+### 6.3 Luettava koodi ja rakenne
+Projektin rakenne on organisoitu loogisesti teknisen vastuun mukaan (**Package by Layer**), mikä helpottaa koodin ylläpitoa:
+
+* **Nimeäminen:** Luokat ja funktiot on nimetty englanniksi ja kuvaavasti (esim. `SyncStoriesWorker`, `MagicWordInput`), noudattaen Kotlinin nimeämiskäytäntöjä.
+* **Komponentointi:** Käyttöliittymä on pilkottu pieniin, uudelleenkäytettäviin Compose-komponentteihin, mikä vähentää koodin toistoa.
+* **Taustatyöt:** Raskaat synkronointioperaatiot on eriytetty **WorkManager**-työntekijöihin (`Worker`), jotta ne eivät kuormita käyttöliittymää.
+* <img width="431" height="435" alt="image" src="https://github.com/user-attachments/assets/aa7d3607-c49e-4764-9b94-8a156ddba229" />
 
 ___
-🚀 7. Advanced Mobile -osuus
--
-7.1 Aihe & opetusrunko (mikä/miksi/miten) 
+## 🚀 7. Advanced Mobile -osuus: Secure AI with Firebase Cloud Functions
 
-7.2 Käyttöönotto & riippuvuudet (kirjastot, konfiguraatiot, permissionit) 
+Tässä osiossa toteutimme "Backend-for-Frontend" -arkkitehtuurin. Android-sovellus ei keskustele suoraan tekoälyn (Gemini API) kanssa, vaan liikenne kulkee **Firebase Cloud Functions** -palvelun läpi. Tämä ratkaisee mobiilikehityksen suurimman tietoturvariskin: API-avaimien vuotamisen.
 
-7.3 Koodidemo (toimiva esimerkki) 
+### 7.1 Aihe & opetusrunko (mikä/miksi/miten)
+* **Mikä:** Serverless-backendin (Firebase Functions 2nd Gen) toteutus, joka toimii turvallisena välikätenä sovelluksen ja Gemini AI:n välillä.
+* **Miksi:**
+    * **Tietoturva:** API-avaimet (`GEMINI_API_KEY`) säilytetään **Google Secret Managerissa**, eikä niitä koskaan kovakoodata sovellukseen.
+    * **Hallinta:** Voimme hyödyntää Firebasen ominaisuuksia kuten **App Check** (estää luvattomat kutsut), **Authentication** (tunnistaa käyttäjän) ja **Firestor**.
+* **Miten:** Sovellus käyttää Firebasen Client SDK:ta kutsuakseen pilvifunktiota (`onCall`). Funktio suoritetaan Googlen palvelimella, se kutsuu tekoälyä ja palauttaa validoidun sadun JSON-objektina sovellukselle.
 
-7.4 Soveltaminen: miten integroitaisiin projektiin (tai demo-projekti) 
+### 7.2 Käyttöönotto & riippuvuudet
+Ratkaisu vaatii konfiguraatiot sekä Android-sovellukseen että backend-ympäristöön.
 
-7.5 Videon laatu & hyödyllisyys 
+**Android (`build.gradle.kts`):**
 
-7.6 BONUS: Advanced-aihe integroituna myös varsinaiseen projektiin
+> implementation(libs.firebase.functions)
+
+**Backend (`package.json`):**
+Backend-projektissa on määritelty seuraavat kriittiset riippuvuudet (Gemini SDK, Admin, Functions):
+
+> "@google/generative-ai": "^0.24.1",
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^7.0.0",
+
+### 7.3 Koodidemo: Datan matka (Data Flow)
+Videolla käymme läpi yksityiskohtaisesti, miten data kulkee sovelluksen ja pilven välillä. Prosessi etenee seuraavasti:
+
+**1. UI & ViewModel (Triggeröinti):**
+Käyttäjä painaa "Luo satu" -painiketta. `StoryViewModel` kerää parametrit, validoi ne ja asettaa UI:n `Loading`-tilaan.
+
+**2. Repository & DataSource (Lähetys):**
+Repository tarkistaa verkkoyhteyden ja delegoi kutsun `StoryFunctionsSource`-luokalle. Tässä tapahtuu varsinainen pilvifunktiokutsu:
+
+> val data = hashMapOf(
+                "childName" to childName,
+                "keywords" to keywords,
+                "length" to length,
+                "style" to style
+            )
+
+            
+            val result = functions
+                .getHttpsCallable("generateStory")
+                .withTimeout(60, TimeUnit.SECONDS)
+                .call(data)
+                .await()
+
+**3. Backend (Logiikka & AI):**
+Cloud Function (`generateStory`) vastaanottaa kutsun. Videolla käymme läpi backendin logiikan:
+* **Tietoturva:** Funktio tarkistaa `request.auth` (käyttäjä) ja App Check -tokenin.
+* **Rate Limiting:** Varmistaa, ettei käyttäjä tee liikaa pyyntöjä lyhyessä ajassa.
+* **Gemini-kutsu:** Hakee API-avaimen turvallisesti ympäristömuuttujista, rakentaa promptin ja pyytää Geminiltä sadun JSON-muodossa.
+* **Preview-tallennus:** Luo sadulle väliaikaisen ID:n ja tallentaa sen Firestoreen.
+
+**4. Vastaus ja Esikatselu (Response):**
+Backend palauttaa generoidun sadun objektina Android-sovellukselle.
+* `StoryFunctionsSource` parsii vastauksen `Map`-objektista `Story`-olioksi.
+* ViewModel päivittää tilaksi `Success`, ja UI:n `AnimatedVisibility` tuo sadun näkyviin.
+
+### 7.4 Soveltaminen: Integraatio projektiin
+Tämä on sovelluksen keskeisin ominaisuus. Integraatio on toteutettu **Repository Pattern** -mallin mukaisesti:
+* **Abstraktio:** Repository piilottaa sen, että data tulee pilvifunktiosta. UI ei tiedä backendin olemassaolosta.
+* **Virheenkäsittely:** Mahdolliset virheet (esim. AI-mallin ruuhkautuminen tai verkkokatkos) käsitellään `Result`-wrapperilla ja näytetään käyttäjälle selkeinä suomenkielisinä virheilmoituksina.
+
+### 7.5 Videon laatu & hyödyllisyys
+Videolla demonstroin koko putken toiminnan:
+1.  **Arkkitehtuuri:** Miten Android-projekti konfiguroidaan käyttämään Cloud Functionsia.
+2.  **Backend:** Käymme läpi TypeScript-koodin logiikan ja tietoturvamekanismit.
+3.  **Live-demo:** Näytän emulaattorissa, miten napin painallus käynnistää prosessin ja tuo tekoälyn luoman sadun ruudulle.
+
+[Linkki videoon: https://www.youtube.com/watch?v=8J9VjU4Qw-U&t=8s]
+
+### 7.6 BONUS: Advanced-aihe integroituna varsinaiseen projektiin
+✅ **Kyllä.** Tämä ei ole erillinen harjoitus, vaan Satumaa-sovelluksen ydintoiminnallisuus ("Core Feature"). Koko sadun luonti- ja tallennusprosessi nojaa tähän turvalliseen Cloud Functions -arkkitehtuuriin. Ratkaisu on tuotantovalmis ja noudattaa Googlen suosittelemia tietoturvakäytäntöjä (Secure by Default).
 
 ___
-⭐ 8. Bonukset
--
-8.1 Projekti: poikkeuksellisen hyvä viimeistely (UX, virhetilat, tyhjätilat, demo) 
+## 💎 8. Bonukset ja viimeistely
 
-8.2 Muu opettajan hyväksymä bonus (kirjaa mikä) 
+### 8.1 Projekti: poikkeuksellisen hyvä viimeistely (UX & Error Handling)
+Sovelluksessa on kiinnitetty erityistä huomiota käyttökokemukseen ja helppouteen (UX) ja siihen, miten virhetilanteet viestitään loppukäyttäjälle (lapselle). Emme näytä teknisiä virhekoodeja, vaan tarinaa tukevia viestejä.
 
+**1. Keskitetty virheenkäsittely (`ErrorUtils.kt`):**
+Olemme toteuttaneet `Throwable.toUserFriendlyMessage` -laajennusfunktion, joka kääntää backendin virhekoodit ymmärrettäväksi suomeksi.
+* **Esimerkki:** Jos tekoäly on ruuhkautunut (backend palauttaa koodin `GEMINI_BUSY`), sovellus ei näytä "Server Error 503", vaan kertoo käyttäjälle: *"Pukilla on kova kiire juuri nyt. Yritä hetken päästä uudelleen."*
+* **Hyöty:** Tämä pitää sovelluksen "taianomaisen" tunnelman ehyenä myös ongelmatilanteissa.
+
+**2. Lokalisointi ja "Tone of Voice" (`strings.xml`):**
+Kaikki tekstit on eriytetty resurssitiedostoon, ja niiden sävy on suunniteltu lapsille sopivaksi:
+* *Tekninen:* "Lataa dataa..." -> *Sovellus:* "Taikuutta ladataan..."
+* *Tekninen:* "Odota vastausta..." -> *Sovellus:* "Pukki miettii vastausta... 🎅"
+
+### 8.2 Muu opettajan hyväksymä bonus
+Sovelluksen tekninen laajuus ylittää peruskurssin vaatimukset kolmella merkittävällä alueella:
+
+1.  **Generatiivinen AI :** Sovellus luo uniikkia sisältöä (satuja ja kirjeitä) reaaliajassa käyttäjän syötteiden perusteella, eikä vain hae valmista dataa tietokannasta.
+2.  **"Light AR" -ominaisuus:** Olemme integroineet laitteen kameran osaksi tarinankerrontaa. Kirjeen saapuessa käyttäjä voi "etsiä" kirjettä oikeasta maailmasta kameran avulla. Tämä yhdistää digitaalisen sisällön ja reaalimaailman (Augmented Reality -tyyppinen kokemus), mikä tekee sovelluksesta lapselle jännittävämmän.
