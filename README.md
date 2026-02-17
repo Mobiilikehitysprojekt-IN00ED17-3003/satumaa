@@ -116,9 +116,10 @@ Projektinhallinta on toteutettu GitHub Projects -työkalulla: https://github.com
 
 
 3.5 Sprint Planning: Suunnittelupalaverit on pidetty ennen jokaista Review-vaihetta.
+Löytyy palaverimuistiosta.
 
 3.6 Scrum Review -osallistumiset: Ryhmä on osallistunut säännöllisiin katselmointiin.
-
+Löytyy palaverimuistiosta.
 ___
 ⚙️ 4. Projekti-ominaisuudet
 -
