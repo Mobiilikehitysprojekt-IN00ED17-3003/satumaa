@@ -1,6 +1,8 @@
 package fi.antero.satumaa.ui.screens.menu
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState // <-- Lisätty import
+import androidx.compose.foundation.verticalScroll // <-- Lisätty import
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,8 +29,9 @@ fun MenuScreen(
     userName: String = stringResource(R.string.menu_default_user),
     onNavigate: (String) -> Unit
 ) {
-    // Käytetään AppPageLayoutia, koska se hallinnoi kätevästi TopBarin ja taustakuvan
-    // (LocalAppImages.current.menuBackground) yhteistoiminnan.
+    // Alustetaan scrollauksen tila
+    val scrollState = rememberScrollState()
+
     AppPageLayout(
         backgroundImageRes = LocalAppImages.current.menuBackground,
         topBar = {
@@ -41,7 +44,12 @@ fun MenuScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                // TÄMÄ MAHDOLLISTAA SCROLLAUKSEN VAAKATILASSA:
+                .verticalScroll(scrollState)
                 .padding(horizontal = AppDimensions.ScreenPadding, vertical = 40.dp),
+            // Arrangement.Bottom on ok, mutta scrollatessa sisältö alkaa
+            // yleensä ylhäältä jos tila loppuu.
+            // Center tai Bottom toimii tässä, kunhan verticalScroll on päällä.
             verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
