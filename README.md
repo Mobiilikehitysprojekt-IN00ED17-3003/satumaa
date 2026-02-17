@@ -420,15 +420,16 @@ Navigaatio pohjautuu **Jetpack Navigation Compose** -kirjastoon, joka hallinnoi 
 * Päänäkymien välillä liikutaan **Bottom Navigation Bar** -alapalkin avulla (Koti / Luo / Profiili).
 * Syvemmät tasot (esim. yksittäisen sadun luku tai karttanäkymä) avautuvat koko ruudun näkyminä, joista pääsee takaisin yläpalkin "Back"-painikkeella tai Androidin eleohjauksella.
 
-<img width="511" height="1043" alt="image" src="https://github.com/user-attachments/assets/774017c1-e219-4ad6-a55c-4a7ded004b6e" />
-<img width="542" height="1043" alt="image" src="https://github.com/user-attachments/assets/5ac07d34-d825-4dbe-b6bc-cda9a9bb0881" />
-<img width="587" height="1060" alt="image" src="https://github.com/user-attachments/assets/050824a1-745d-4ddb-8684-a3a1a7b18812" />
-<img width="588" height="1032" alt="image" src="https://github.com/user-attachments/assets/9b8dd79f-f281-4141-9fcf-8a83dceb2a36" />
-<img width="526" height="1056" alt="image" src="https://github.com/user-attachments/assets/c9b981ce-702d-4ef4-b8e3-5f39ebd24f37" />
-<img width="533" height="1060" alt="image" src="https://github.com/user-attachments/assets/359ca496-b6f0-495b-8a8d-b5bc445e3616" />
-<img width="547" height="1076" alt="image" src="https://github.com/user-attachments/assets/b9d92fdb-dbfe-4c50-ae31-826502a3d133" />
-<img width="542" height="1051" alt="image" src="https://github.com/user-attachments/assets/c4f8e0bb-8603-40a4-b146-0c9c317e9de6" />
-<img width="544" height="1046" alt="image" src="https://github.com/user-attachments/assets/e9fc68c5-8e28-4fcd-a8e3-1cdd64b6fade" />
+### 📱 Kuvakaappaukset sovelluksesta
+
+| | |
+|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/774017c1-e219-4ad6-a55c-4a7ded004b6e" width="250" alt="Login"> <br> **1. Kirjautuminen** | <img src="https://github.com/user-attachments/assets/5ac07d34-d825-4dbe-b6bc-cda9a9bb0881" width="250" alt="Onboarding"> <br> **2. Seikkailijan nimi** |
+| <img src="https://github.com/user-attachments/assets/050824a1-745d-4ddb-8684-a3a1a7b18812" width="250" alt="Menu"> <br> **3. Menu** | <img src="https://github.com/user-attachments/assets/6911ed7d-a724-477e-9715-38b6460c37fb" width="250" alt="Create Story"> <br> **4. Iltasadun luonti** |
+| <img src="https://github.com/user-attachments/assets/33d32e62-2112-4a4b-a710-b774f9fab2f4" width="250" alt="Story Result"> <br> **5. Satu** | <img src="https://github.com/user-attachments/assets/c9b981ce-702d-4ef4-b8e3-5f39ebd24f37" width="250" alt="Saved Stories"> <br> **6. Tallennetut sadut** |
+| <img src="https://github.com/user-attachments/assets/359ca496-b6f0-495b-8a8d-b5bc445e3616" width="250" alt="Letter Input"> <br> **7. Kirje joulupukille** | <img src="https://github.com/user-attachments/assets/b9d92fdb-dbfe-4c50-ae31-826502a3d133" width="250" alt="Santa Received"> <br> **8. Pukki sai kirjeesi** |
+| <img src="https://github.com/user-attachments/assets/c4f8e0bb-8603-40a4-b146-0c9c317e9de6" width="250" alt="Math Puzzle"> <br> **9. Kirjeen avaus pulmatehtävällä** | <img src="https://github.com/user-attachments/assets/c8f39f70-1942-40ac-a4a0-9471b2eb5575" width="250" alt="AR Camera"> <br> **10. Kirjeen avaus AR-kameralla** |
+| <img src="https://github.com/user-attachments/assets/e9fc68c5-8e28-4fcd-a8e3-1cdd64b6fade" width="250" alt="Santa Reply"> <br> **11. Pukin vastaus** | |
 
 
 
