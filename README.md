@@ -158,7 +158,6 @@ Sovellus ei käytä perinteistä REST-rajapintaa, vaan **Firebase Callable Cloud
     * Kuvaus: Estää turhan HTTP-kutsun, jos `!isOnline()`.
 
 ### 4.2 Paikallinen tallennus (Room Database)
----
 Sovellus käyttää **Room**-kirjastoa datan pysyvään tallennukseen laitteelle. Tämä mahdollistaa satujen selaamisen ja tallentamisen strukturoidussa SQL-tietokannassa. Arkkitehtuuri noudattaa **Repository-mallia**, jossa tietokanta on eriytetty sovelluksen käyttöliittymästä.
 
 **Toteutuksen yksityiskohdat:**
@@ -168,13 +167,18 @@ Sovellus käyttää **Room**-kirjastoa datan pysyvään tallennukseen laitteelle
 
 **Kooditodisteet:**
 
+* **Tietokannan konfiguraatio (Database):**
+    * **Tiedosto:** `data/local/SatumaaDatabase.kt`
+    * **Luokka:** `SatumaaDatabase`
+    * **Kuvaus:** Määrittelee `@Database`-annotaatiolla sovelluksen SQL-tietokannan, siihen kuuluvat taulut (`StoryEntity`, `LetterEntity`, `LetterLocalStateEntity`) sekä versionumeron. Toimii keskitettynä pisteenä DAO-rajapinnoille.
+    * **Rivit:** 22-30
+
 * **Tietokantakyselyt ja reaktiivisuus (DAO):**
     * **Tiedosto:** `data/local/dao/StoryDao.kt`
     * **Funktio:** `getAllStories`, `insertStory`
     * **Kuvaus:** Määrittelee `@Query`-annotaatiolla SQL-lauseet ja palauttaa `Flow<List<StoryEntity>>`, jolloin UI päivittyy automaattisesti kannan muuttuessa.
     * **Rivit:** 29-30
     * <img width="746" height="57" alt="image" src="https://github.com/user-attachments/assets/d4abeb76-cdc6-4608-8909-5e73a7fad22d" />
-
 
 * **Repositoryn integraatio ja datamuunnos:**
     * **Tiedosto:** `data/repository/StoryRepositoryImpl.kt`
@@ -183,7 +187,6 @@ Sovellus käyttää **Room**-kirjastoa datan pysyvään tallennukseen laitteelle
     * **Rivit:** 44-48 (`getStories`-toteutus)
     * <img width="641" height="140" alt="image" src="https://github.com/user-attachments/assets/506fc3aa-af62-47e3-a7d8-d3e73c018364" />
 
- 
 * **Tallennusoperaatio:**
     * **Tiedosto:** `data/repository/StoryRepositoryImpl.kt`
     * **Funktio:** `saveStory`
