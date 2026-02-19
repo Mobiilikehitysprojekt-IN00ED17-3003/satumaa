@@ -555,12 +555,13 @@ Projektin rakenne on organisoitu loogisesti teknisen vastuun mukaan (**Package b
 * **Nimeäminen:** Luokat ja funktiot on nimetty englanniksi ja kuvaavasti (esim. `SyncStoriesWorker`, `MagicWordInput`), noudattaen Kotlinin nimeämiskäytäntöjä.
 * **Komponentointi:** Käyttöliittymä on pilkottu pieniin, uudelleenkäytettäviin Compose-komponentteihin, mikä vähentää koodin toistoa.
 * **Taustatyöt:** Raskaat synkronointioperaatiot on eriytetty **WorkManager**-työntekijöihin (`Worker`), jotta ne eivät kuormita käyttöliittymää.
-### 🛠️ Arkkitehtuuri ja Rakenne
 
-| | |
-|:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/aa7d3607-c49e-4764-9b94-8a156ddba229" width="300" alt="Architecture Overview"> | <img src="https://github.com/user-attachments/assets/25189dfc-8295-463e-a959-ecd10bfc2529" width="300" alt="Project Structure"> |
-| <img src="https://github.com/user-attachments/assets/0aafc442-8822-419b-9306-6ed5d1dc0503" width="300" alt="Data Flow Diagram"> | <img src="https://github.com/user-attachments/assets/97da0497-5561-407f-9566-eed39ee47186" width="300" alt="Navigation Graph"> |
+### 📁 Kansiorakenne 
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/9bcebec1-bd11-4597-a231-822d862ed953" width="260" alt="Folder Structure 1"> | <img src="https://github.com/user-attachments/assets/4409157b-3aa7-4ec4-9122-62f2d38d57ad" width="260" alt="Folder Structure 2"> | <img src="https://github.com/user-attachments/assets/03f38809-d031-4678-b18c-e60e4e8f3668" width="260" alt="Folder Structure 3"> |
+
 
 
 
