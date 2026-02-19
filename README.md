@@ -87,12 +87,12 @@ ___
 📝 2. Pakolliset palautukset / Documents
 -
 Tästä osiosta löytyvät linkit projektin virallisiin dokumentteihin ja esityksiin:  
-2.1 UI-suunnitelma: [Linkki dokumenttiin]  
-2.2 Työajanseuranta: [Linkki seurantaan]  
-2.3 Pisteytyslomake: [Linkki lomakkeeseen]  
-2.4 Loppuesittelyvideo: [Linkki videoon]  
-2.5 Advanced Mobile -video: [Linkki videoon]  
-2.6 Scrum-muistio: [Linkki muistioon]
+2.1 UI-suunnitelma: https://github.com/Mobiilikehitysprojekt-IN00ED17-3003/satumaa/blob/main/Documents/UI-Suunnitelma.pdf  
+2.2 Työajanseuranta: https://github.com/Mobiilikehitysprojekt-IN00ED17-3003/satumaa/tree/main/Documents/Tunnit  
+2.3 Pisteytyslomake: https://github.com/Mobiilikehitysprojekt-IN00ED17-3003/satumaa/blob/main/Documents/Pisteytyslomake/Pisteytyslomake-%20Ryhm%C3%A4%2018.pdf  
+2.4 Loppuesittelyvideo: https://www.youtube.com/watch?v=6nWVim3EY9Q  
+2.5 Advanced Mobile-video: https://www.youtube.com/watch?v=8J9VjU4Qw-U&t=8s  
+2.6 Scrum-muistio: https://github.com/Mobiilikehitysprojekt-IN00ED17-3003/satumaa/tree/main/Documents/Scrum_muistio
 
 ___
 🎯 3. Scrum & GitHub Projects -näyttö
