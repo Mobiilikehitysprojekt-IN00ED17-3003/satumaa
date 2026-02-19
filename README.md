@@ -89,7 +89,7 @@ ___
 Tästä osiosta löytyvät linkit projektin virallisiin dokumentteihin ja esityksiin:  
 2.1 UI-suunnitelma: https://github.com/Mobiilikehitysprojekt-IN00ED17-3003/satumaa/blob/main/Documents/UI-Suunnitelma.pdf  
 2.2 Työajanseuranta: https://github.com/Mobiilikehitysprojekt-IN00ED17-3003/satumaa/tree/main/Documents/Tunnit  
-2.3 Pisteytyslomake: https://github.com/Mobiilikehitysprojekt-IN00ED17-3003/satumaa/blob/main/Documents/Pisteytyslomake/Pisteytyslomake-%20Ryhm%C3%A4%2018.pdf  
+2.3 Pisteytyslomake: https://github.com/Mobiilikehitysprojekt-IN00ED17-3003/satumaa/tree/main/Documents/Pisteytyslomake  
 2.4 Loppuesittelyvideo: https://www.youtube.com/watch?v=6nWVim3EY9Q  
 2.5 Advanced Mobile-video: https://www.youtube.com/watch?v=8J9VjU4Qw-U&t=8s  
 2.6 Scrum-muistio: https://github.com/Mobiilikehitysprojekt-IN00ED17-3003/satumaa/tree/main/Documents/Scrum_muistio
@@ -310,7 +310,7 @@ Sovellus visualisoi kirjeen "matkan" käyttäjän sijainnista Korvatunturille re
 **Toteutuksen yksityiskohdat:**
 * **OpenStreetMap (osmdroid):** Sovellus käyttää avoimen lähdekoodin `osmdroid`-kirjastoa karttapohjan esittämiseen. Karttanäkymä on upotettu Jetpack Composeen käyttämällä `AndroidView`-komponenttia.
 * **Fused Location Provider:** Käyttäjän tarkka sijainti haetaan Googlen suosittelemalla `FusedLocationProviderClient`-rajapinnalla, joka yhdistää GPS- ja verkkotiedot energiatehokkaasti.
-* **Reaaliaikainen animaatio:** `LetterMapScreen` laskee kirjeen etenemisen (0.0 – 1.0) vertaamalla nykyhetkeä kirjeen lähetysaikaan ja simuloituun saapumisaikaan. Tämä `progress`-arvo ohjaa tontun liikettä kartalla 60fps päivitysnopeudella.
+* **Reaaliaikainen animaatio:** `LetterMapScreen` laskee kirjeen etenemisen (0.0 – 1.0) vertaamalla nykyhetkeä kirjeen lähetysaikaan ja simuloituun saapumisaikaan. Tämä `progress`-arvo ohjaa kirjeen liikettä kartalla 60fps päivitysnopeudella.
 * **Geometrinen laskenta:** Etäisyys (km) lasketaan dynaamisesti käyttäjän koordinaattien ja Korvatunturin välillä käyttämällä Androidin `Location.distanceBetween`-metodia.
 
 
